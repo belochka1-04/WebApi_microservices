@@ -1,0 +1,13 @@
+@WebApi_JobDocumentService_HostAddress = http://localhost:5140
+
+# Получить документ по Id
+GET {{WebApi_JobDocumentService_HostAddress}}/api/document/get/123
+Accept: application/json
+
+###
+
+# Получить PDF-текст документа по Id
+GET {{WebApi_JobDocumentService_HostAddress}}/api/documentpdftext/get/123
+Accept: application/json
+
+###

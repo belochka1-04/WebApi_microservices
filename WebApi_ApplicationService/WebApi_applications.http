@@ -1,0 +1,50 @@
+@WebApi_applications_HostAddress = http://localhost:5135
+
+# Получить весь список приложений
+GET {{WebApi_applications_HostAddress}}/api/application/get
+Accept: application/json
+
+###
+
+# Получить приложение по имени
+GET {{WebApi_applications_HostAddress}}/api/application/getapp/sampleName
+Accept: application/json
+
+###
+
+# Обновить приложение по id (пример с тестовыми данными)
+PUT {{WebApi_applications_HostAddress}}/api/application/update/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "TestApp",
+  "description": "Описание для приложения",
+  "otherProperty": "Значение"
+}
+
+###
+
+# Получить список логов приложений
+GET {{WebApi_applications_HostAddress}}/api/applicationlog/get
+Accept: application/json
+
+###
+
+# Вставить новую запись лога приложения
+PUT {{WebApi_applications_HostAddress}}/api/applicationlog/insert/sampleApp
+Content-Type: application/json
+
+{
+  "recType": "Warning",
+  "text": "Текст предупреждения",
+  "description": "Дополнительное описание"
+}
+
+###
+
+# Проверить состояние сервиса (healthcheck)
+GET {{WebApi_applications_HostAddress}}/healthcheck
+Accept: application/json
+
+###
