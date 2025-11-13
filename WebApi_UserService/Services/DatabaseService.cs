@@ -192,6 +192,27 @@ namespace WebApi_UserService.Services
             }
         }
 
+        public async Task<User> GetUserByTgAsync(int Id)
+        {
+            try
+            {
+                var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.TelegramId == Id);
+                return user;
+            }
+            catch (DbUpdateException ex)
+            {
+                Logger logger = LogManager.GetCurrentClassLogger();
+                logger.Error($"Ошибка при получении  пользователя (TgId: {Id}): {ex.Message}");
+                throw; // Пробрасываем исключение дальше, если нужно
+            }
+            catch (Exception ex)
+            {
+                Logger logger = LogManager.GetCurrentClassLogger();
+                logger.Error($"Необработанная ошибка при получении пользователя (TgId: {Id}): {ex.Message}");
+                throw;
+            }
+        }
+
         public async Task SaveDefaultUserToBDAsync(int? telegramId, string prefersTelegram)
         {
             try

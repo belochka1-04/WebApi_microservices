@@ -6,6 +6,7 @@ using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
+using WebApi_JobService;
 using WebApi_JobService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +29,11 @@ builder.Services.AddCustomServices(builder.Configuration, "Application Microserv
 
 // JWT аутентификация, если нужно
 builder.Services.AddSharedAuthentication(builder.Configuration);
-
+// Регистрация клиента UserServiceClient с базовым адресом
+builder.Services.AddHttpClient<UserServiceClient>(client =>
+{
+    client.BaseAddress = new Uri("http://your-userservice-host/"); // надо указать реальный URL UserService
+});
 // Логирование Serilog
 builder.Host.UseCustomSerilog();
 

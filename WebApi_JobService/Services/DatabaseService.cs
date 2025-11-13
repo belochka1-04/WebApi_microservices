@@ -16,10 +16,12 @@ namespace WebApi_JobService.Services
     {
         private readonly KameraDbContext _dbContext;
         private readonly NLog.ILogger _logger;
+        private readonly UserServiceClient _userServiceClient;
 
-        public DatabaseService(KameraDbContext dbContext)
+        public DatabaseService(KameraDbContext dbContext, UserServiceClient userServiceClient)
         {
             _dbContext = dbContext;
+            _userServiceClient = userServiceClient;
             _logger = LogManager.GetCurrentClassLogger();
         }
 
@@ -214,7 +216,9 @@ namespace WebApi_JobService.Services
         {
             try
             {
-                var userId = _dbContext.Users.Where(x => x.TelegramId == Id).FirstOrDefault();
+               // var userId = _dbContext.Users.Where(x => x.TelegramId == Id).FirstOrDefault(); заменяем на работу с сервисом UserService
+                var userId = await _userServiceClient.GetUserByTelegramIdAsync(Id); // Внешний http/rpc-клиент
+
                 if (userId == null || userId.Id < 1)
                 {
                     throw new Exception($"Пользователь с Telegram ID {Id} не найден.");

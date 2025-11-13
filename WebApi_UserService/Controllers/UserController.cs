@@ -20,6 +20,13 @@ namespace WebApi_UserService.Controllers
             return Ok(job);
         }
 
+        [HttpGet("getuserbyTg/{Id}")]
+        public async Task<ActionResult<User>> GetUserByTgId(int Id)
+        {
+            var job = await _databaseService.GetUserByTgAsync(Id);
+            return Ok(job);
+        }
+
         // Метод для сохранения нового пользователя
         [HttpPost("save")]
         public async Task<IActionResult> SaveUser([FromBody] User user)

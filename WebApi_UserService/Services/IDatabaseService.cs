@@ -14,6 +14,7 @@ namespace WebApi_UserService.Services
         Task DeleteUserStocksAsync(int Id);
 
         Task<int> GetUserCrmAsync(int UserId);
+        Task<User> GetUserByTgAsync(int Id);
 
         Task SaveDefaultUserToBDAsync(int? telegramId, string prefersTelegram);
 
