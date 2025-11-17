@@ -3,18 +3,13 @@ name: CI/CD for WebApi_ApplicationService
 on:
   push:
     branches:
-      - develop
-      - main
-  pull_request:
-    branches:
-      - develop
       - main
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
     env:
-      ConnectionStrings__DefaultConnection: ${{ secrets.MSSQL_CONNECTION_STRING }}
+      ConnectionStrings__KameraDb: ${{ secrets.MSSQL_CONNECTION_STRING }}
       Authentication__SecretKey: ${{ secrets.AUTH_SECRET_KEY }}
     steps:
       - name: Checkout code
@@ -34,8 +29,15 @@ jobs:
       - name: Run tests
         run: dotnet test ./WebApi_applications/WebApi_applications.csproj --configuration Release --no-build
 
-      - name: Build Docker image
-        run: docker build -t myrepo/webapi_applications:${{ github.sha }} ./WebApi_applications
+  build-windows:
+    needs: build-test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Windows Docker image
+        run: docker build -f Dockerfile.windows -t myrepo/webapi_applications:windows-${{ github.sha }} .
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -43,16 +45,24 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Push Docker image
-        run: docker push myrepo/webapi_applications:${{ github.sha }}
+      - name: Push Windows image
+        run: docker push myrepo/webapi_applications:windows-${{ github.sha }}
 
-  deploy:
-    needs: build-test
-    runs-on: ubuntu-latest
+  deploy-windows:
+    needs: build-windows
+    runs-on: windows-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Deploy to Kubernetes or server
+      - name: Deploy to Windows server
         run: |
-          # Здесь команда деплоя из Docker Registry на продакшн или тестовый кластер
-          echo "Deploying image myrepo/webapi_applications:${{ github.sha }}"
-          # Пример: kubectl set image deployment/webapi webapi=myrepo/webapi_applications:${{ github.sha }}
+          $username = "${{ secrets.WINDOWS_SERVER_USER }}"
+          $password = ConvertTo-SecureString "${{ secrets.WINDOWS_SERVER_PASSWORD }}" -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+          $session = New-PSSession -ComputerName ${{ secrets.WINDOWS_SERVER_IP }} -Credential $credential
+          Invoke-Command -Session $session -ScriptBlock {
+            docker pull myrepo/webapi_applications:windows-${{ github.sha }}
+            docker stop webapi_applications || true
+            docker rm webapi_applications || true
+            docker run -d --name webapi_applications -p 6050:6050 myrepo/webapi_applications:windows-${{ github.sha }}
+          }
+          Remove-PSSession $session

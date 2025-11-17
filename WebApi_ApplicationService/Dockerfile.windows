@@ -1,0 +1,30 @@
+# См. статью по ссылке https://aka.ms/customizecontainer
+
+# Этап для отладки (быстрый запуск из VS)
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-windowsservercore-ltsc2022 AS base
+WORKDIR /app
+EXPOSE 6050
+EXPOSE 6051
+
+# Этап сборки
+FROM mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2022 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+COPY ["WebApi_ApplicationService/WebApi_applications.csproj", "WebApi_ApplicationService/"]
+COPY ["2_KameraData/KameraData.csproj", "2_KameraData/"]
+COPY ["SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj", "SharedMicroserviceLibrary/"]
+RUN dotnet restore "./WebApi_ApplicationService/WebApi_applications.csproj"
+COPY . .
+WORKDIR "/src/WebApi_ApplicationService"
+RUN dotnet build "./WebApi_applications.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# Этап публикации
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./WebApi_applications.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+
+# Финальный этап (рабочий образ)
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "WebApi_applications.dll"]

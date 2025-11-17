@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11206.111
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KameraData", "2_KameraData\KameraData.csproj", "{4B565DD6-98E5-A0D6-855B-ECFB4342925D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedMicroserviceLibrary", "SharedMicroserviceLibrary\SharedMicroserviceLibrary.csproj", "{0A8196DD-023B-D4D1-120E-478919BA913F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi_applications", "WebApi_ApplicationService\WebApi_applications.csproj", "{2D7ACEF1-AD46-3FEB-EB53-D9E0CD264B88}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4B565DD6-98E5-A0D6-855B-ECFB4342925D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B565DD6-98E5-A0D6-855B-ECFB4342925D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B565DD6-98E5-A0D6-855B-ECFB4342925D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B565DD6-98E5-A0D6-855B-ECFB4342925D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A8196DD-023B-D4D1-120E-478919BA913F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A8196DD-023B-D4D1-120E-478919BA913F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A8196DD-023B-D4D1-120E-478919BA913F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A8196DD-023B-D4D1-120E-478919BA913F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D7ACEF1-AD46-3FEB-EB53-D9E0CD264B88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D7ACEF1-AD46-3FEB-EB53-D9E0CD264B88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D7ACEF1-AD46-3FEB-EB53-D9E0CD264B88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D7ACEF1-AD46-3FEB-EB53-D9E0CD264B88}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {089784C0-9801-4FFE-A1AA-EFD286E45553}
+	EndGlobalSection
+EndGlobal
