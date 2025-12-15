@@ -1,4 +1,5 @@
-﻿using KameraData.Data.Models;
+﻿using KameraData.Data.Dtos;
+using KameraData.Data.Models;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace WebApi_JobService.Services
         Task<Job> GetJobByIdAsync(int jobId);
         Task<IEnumerable<Job>> GetJobByLink(string jobLink);
         Task<Job> AddJobByTgAsync(int Id);
-
+        Task<JobDto?> GetJobDtoByIdAsync(int jobId);
 
     }
 

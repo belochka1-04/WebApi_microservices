@@ -1,5 +1,10 @@
 ﻿using KameraData.Data;
+using KameraData.Data.Dtos;
 using KameraData.Data.Models;
+using KameraData.Events;
+using MassTransit;
+using MassTransit.Extensions.Hosting;
+using MassTransit.Transports;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using SharedMicroserviceLibrary.Middleware;
@@ -9,10 +14,6 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using WebApi_JobService.Services;
-using MassTransit.Extensions.Hosting;
-using MassTransit.Transports;
-using KameraData.Events;
-using MassTransit;
 
 namespace WebApi_JobService.Services
 {
@@ -193,6 +194,35 @@ namespace WebApi_JobService.Services
             {
                 _logger.Error("Ошибка при получении заданий: " + ex);
                 return new Job(); // Возвращаем новый экземпляр Job в случае ошибки
+            }
+        }
+
+        public async Task<JobDto?> GetJobDtoByIdAsync(int jobId)
+        {
+            try
+            {
+                var job = await _dbContext.Jobs
+                    .Include(x => x.User)
+                    .Where(j => j.Id == jobId)
+                    .Select(j => new JobDto
+                    {
+                        Id = j.Id,
+                        UserId = j.UserId,
+                        TelegramId = j.TelegramId,
+                        JobNumber = j.JobNumber,
+                        JobLink = j.JobLink,
+                        Token = j.Token,
+                        UpdateRequestStatus = j.UpdateRequestStatus,
+                        Status = j.Status
+                    })
+                    .FirstOrDefaultAsync();
+
+                return job;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при получении Job");
+                return null;
             }
         }
         public async Task<IEnumerable<Job>> GetJobByLink(string jobLink)

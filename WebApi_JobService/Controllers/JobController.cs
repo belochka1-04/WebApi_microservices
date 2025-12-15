@@ -1,3 +1,4 @@
+using KameraData.Data.Dtos;
 using KameraData.Data.Models;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_JobService.Services;
@@ -11,6 +12,16 @@ namespace WebApi_JobService.Controllers
         
         public JobController(IDatabaseService databaseService) : base(databaseService)
         {
+        }
+
+        [HttpGet("getdtojob/{id:int}")]
+        public async Task<ActionResult<JobDto>> GetById(int id)
+        {
+            var job = await _databaseService.GetJobDtoByIdAsync(id);
+            if (job == null)
+                return NotFound();
+
+            return Ok(job);
         }
 
         [HttpGet("getjob/{jobId}")]

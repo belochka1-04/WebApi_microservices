@@ -1,0 +1,10 @@
+﻿namespace WebApi_MaskService.Httpclient
+{
+    public class JobServiceOptions
+    {
+        public const string SectionName = "JobService";
+
+        public string BaseUrl { get; set; } = string.Empty;
+    }
+
+}
