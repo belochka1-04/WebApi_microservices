@@ -1,4 +1,5 @@
-using KameraData.Data;
+п»їusing KameraData.Data;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -6,6 +7,7 @@ using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
+using UserService.Consumers;
 using WebApi_UserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,20 +18,39 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
 }
 
-// Регистрация DbContext с конкретной строкой подключения
+// Р РµРіРёСЃС‚СЂР°С†РёСЏ DbContext СЃ РєРѕРЅРєСЂРµС‚РЅРѕР№ СЃС‚СЂРѕРєРѕР№ РїРѕРґРєР»СЋС‡РµРЅРёСЏ
 builder.Services.AddDbContext<KameraDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Регистрация сервисов приложения, с внедрением конкретного DbContext
+// Р РµРіРёСЃС‚СЂР°С†РёСЏ СЃРµСЂРІРёСЃРѕРІ РїСЂРёР»РѕР¶РµРЅРёСЏ, СЃ РІРЅРµРґСЂРµРЅРёРµРј РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ DbContext
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 
-// Регистрация кросс-сервиса: контроллеры, swagger, json
+// 2. MassTransit СЃ CONSUMER
+builder.Services.AddMassTransit(x =>
+{
+    // Р РµРіРёСЃС‚СЂРёСЂСѓРµРј Consumer (РѕР±СЂР°Р±РѕС‚С‡РёРє СЃРѕР±С‹С‚РёР№)
+    x.AddConsumer<JobCreatedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("rabbitmq://localhost", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        // вњ… РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё СЃРѕР·РґР°С‘С‚ РѕС‡РµСЂРµРґСЊ РґР»СЏ JobCreatedEvent
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
+// Р РµРіРёСЃС‚СЂР°С†РёСЏ РєСЂРѕСЃСЃ-СЃРµСЂРІРёСЃР°: РєРѕРЅС‚СЂРѕР»Р»РµСЂС‹, swagger, json
 builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");
 
-// JWT аутентификация, если нужно
+// JWT Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ, РµСЃР»Рё РЅСѓР¶РЅРѕ
 builder.Services.AddSharedAuthentication(builder.Configuration);
 
-// Логирование Serilog
+// Р›РѕРіРёСЂРѕРІР°РЅРёРµ Serilog
 builder.Host.UseCustomSerilog();
 
 var app = builder.Build();

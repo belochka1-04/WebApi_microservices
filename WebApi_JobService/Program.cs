@@ -1,4 +1,6 @@
 using KameraData.Data;
+using KameraData.Events;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -7,6 +9,7 @@ using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
 using WebApi_JobService;
+using WebApi_JobService.Consumer.JobsService.Consumers;
 using WebApi_JobService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +36,23 @@ builder.Services.AddSharedAuthentication(builder.Configuration);
 builder.Services.AddHttpClient<UserServiceClient>(client =>
 {
     client.BaseAddress = new Uri("http://your-userservice-host/"); // надо указать реальный URL UserService
+});
+//новое добавляем RabbitMQ для обработки user
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<JobLinkedConsumer>();
+   
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("rabbitmq://localhost", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
 });
 // Логирование Serilog
 builder.Host.UseCustomSerilog();

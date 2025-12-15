@@ -9,6 +9,10 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using WebApi_JobService.Services;
+using MassTransit.Extensions.Hosting;
+using MassTransit.Transports;
+using KameraData.Events;
+using MassTransit;
 
 namespace WebApi_JobService.Services
 {
@@ -17,11 +21,14 @@ namespace WebApi_JobService.Services
         private readonly KameraDbContext _dbContext;
         private readonly NLog.ILogger _logger;
         private readonly UserServiceClient _userServiceClient;
+        private readonly IPublishEndpoint _publishEndpoint;  // ← ПОЛЕ (не локальная переменная)
 
-        public DatabaseService(KameraDbContext dbContext, UserServiceClient userServiceClient)
+
+        public DatabaseService(KameraDbContext dbContext, IPublishEndpoint publishEndpoint, ILogger<DatabaseService> logger)// ← DI автоматически                                                                               
         {
             _dbContext = dbContext;
-            _userServiceClient = userServiceClient;
+            //_userServiceClient = userServiceClient;
+            _publishEndpoint = publishEndpoint;  // ← ПРИСВАИВАЕМ ПОЛЕ
             _logger = LogManager.GetCurrentClassLogger();
         }
 
@@ -212,44 +219,69 @@ namespace WebApi_JobService.Services
             }
         }
 
-        public async Task<Job> AddJobByTgAsync(int Id)
+        //public async Task<Job> AddJobByTgAsync(int Id)
+        //{
+        //    try
+        //    {
+        //       // var userId = _dbContext.Users.Where(x => x.TelegramId == Id).FirstOrDefault(); заменяем на работу с сервисом UserService
+        //        var userId = await _userServiceClient.GetUserByTelegramIdAsync(Id); // Внешний http/rpc-клиент
+
+        //        if (userId == null || userId.Id < 1)
+        //        {
+        //            throw new Exception($"Пользователь с Telegram ID {Id} не найден.");
+        //        }
+        //        // Находим максимальный JobNumber
+        //        var maxJobNumber = await _dbContext.Jobs
+        //            .MaxAsync(j => Convert.ToInt32(j.JobNumber)); // Получаем максимальный номер или 0, если нет заданий
+
+        //        // Создаем новый объект Job
+        //        var newJob = new Job
+        //        {
+        //            UserId = userId.Id,
+        //            JobNumber = (maxJobNumber + 1).ToString(), // Уникальный номер задания
+        //            JobLink = string.Empty, // Пустая строка для JobLink
+        //            UpdateRequestStatus = string.Empty // Пустая строка для UpdateRequestStatus
+        //        };
+
+        //        // Добавляем объект в контекст
+        //        await _dbContext.Jobs.AddAsync(newJob);
+
+        //        // Сохраняем изменения в базе данных
+        //        await _dbContext.SaveChangesAsync();
+
+        //        return newJob; // Возвращаем добавленный объект
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.Error("Ошибка при добавлении задания: " + ex);
+        //        throw; // Пробрасываем исключение дальше
+        //    }
+        //}
+        public async Task<Job> AddJobByTgAsync(int telegramId)
         {
-            try
+            var maxJobNumber = await _dbContext.Jobs
+                .MaxAsync(j => Convert.ToInt32(j.JobNumber ?? "0"));  // ← Защита от null
+
+            var newJob = new Job
             {
-               // var userId = _dbContext.Users.Where(x => x.TelegramId == Id).FirstOrDefault(); заменяем на работу с сервисом UserService
-                var userId = await _userServiceClient.GetUserByTelegramIdAsync(Id); // Внешний http/rpc-клиент
+                TelegramId = telegramId,
+                JobNumber = (maxJobNumber + 1).ToString(),
+                Status = "Pending"
+            };
 
-                if (userId == null || userId.Id < 1)
-                {
-                    throw new Exception($"Пользователь с Telegram ID {Id} не найден.");
-                }
-                // Находим максимальный JobNumber
-                var maxJobNumber = await _dbContext.Jobs
-                    .MaxAsync(j => Convert.ToInt32(j.JobNumber)); // Получаем максимальный номер или 0, если нет заданий
+            await _dbContext.Jobs.AddAsync(newJob);
+            await _dbContext.SaveChangesAsync();
 
-                // Создаем новый объект Job
-                var newJob = new Job
-                {
-                    UserId = userId.Id,
-                    JobNumber = (maxJobNumber + 1).ToString(), // Уникальный номер задания
-                    JobLink = string.Empty, // Пустая строка для JobLink
-                    UpdateRequestStatus = string.Empty // Пустая строка для UpdateRequestStatus
-                };
-
-                // Добавляем объект в контекст
-                await _dbContext.Jobs.AddAsync(newJob);
-
-                // Сохраняем изменения в базе данных
-                await _dbContext.SaveChangesAsync();
-
-                return newJob; // Возвращаем добавленный объект
-            }
-            catch (Exception ex)
+            // добавили _publishEndpoint
+            await _publishEndpoint.Publish(new JobCreatedEvent
             {
-                _logger.Error("Ошибка при добавлении задания: " + ex);
-                throw; // Пробрасываем исключение дальше
-            }
+                JobId = newJob.Id,
+                TelegramId = telegramId
+            });
+
+            return newJob;
         }
+
 
         #endregion
 
