@@ -301,7 +301,7 @@ namespace WebApi_JobService.Services
 
             await _dbContext.Jobs.AddAsync(newJob);
             await _dbContext.SaveChangesAsync();
-
+            
             // добавили _publishEndpoint
             await _publishEndpoint.Publish(new JobCreatedEvent
             {

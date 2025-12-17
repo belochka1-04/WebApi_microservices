@@ -47,6 +47,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi_applications", "WebA
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi_document", "WebApi_DocumentService\WebApi_document.csproj", "{0F91D302-58DC-A572-BA6C-F3C41C934B7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi_MaskService", "WebApi_MaskService\WebApi_MaskService.csproj", "{205BDD9D-AC24-A0C0-AE61-7572BF52D56C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi_SourceService", "WebApi_SourceService\WebApi_SourceService.csproj", "{0AA39AD6-C1B9-F780-080E-AAC503462942}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +145,14 @@ Global
 		{0F91D302-58DC-A572-BA6C-F3C41C934B7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F91D302-58DC-A572-BA6C-F3C41C934B7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F91D302-58DC-A572-BA6C-F3C41C934B7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{205BDD9D-AC24-A0C0-AE61-7572BF52D56C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{205BDD9D-AC24-A0C0-AE61-7572BF52D56C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{205BDD9D-AC24-A0C0-AE61-7572BF52D56C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{205BDD9D-AC24-A0C0-AE61-7572BF52D56C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AA39AD6-C1B9-F780-080E-AAC503462942}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AA39AD6-C1B9-F780-080E-AAC503462942}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AA39AD6-C1B9-F780-080E-AAC503462942}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AA39AD6-C1B9-F780-080E-AAC503462942}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

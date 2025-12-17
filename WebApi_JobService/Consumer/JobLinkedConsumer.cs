@@ -33,8 +33,8 @@
                     return;
                 }
 
-                job.UserId = context.Message.UserId;     // ✅ Устанавливаем UserId
-                job.Status = "Linked";                   // ✅ Меняем статус
+                job.UserId = context.Message.UserId;     //  Устанавливаем UserId
+                job.Status = "Linked";                   //  Меняем статус
 
                 await _dbContext.SaveChangesAsync();
 

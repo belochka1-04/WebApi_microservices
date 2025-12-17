@@ -1,0 +1,259 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - microservices
+
+  webapi_applications:
+    build: ./WebApi_Applications
+    container_name: webapi_applications
+    ports:
+      - "5001:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_documentservice:
+    build: ./WebApi_document
+    container_name: webapi_documentservice
+    ports:
+      - "5003:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_errorlogservice:
+    build: ./WebApi_ErrorLogService
+    container_name: webapi_errorlogservice
+    ports:
+      - "5004:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_imageservice:
+    build: ./WebApi_ImageJobService
+    container_name: webapi_imagejobservice
+    ports:
+      - "5005:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_jobdocumentservice:
+    build: ./WebApi_JobDocumentService
+    container_name: webapi_jobdocumentservice
+    ports:
+      - "5006:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_jobs:
+    build: ./WebApi_jobs
+    container_name: webapi_jobs
+    ports:
+      - "5007:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_jobservice:
+    build: ./WebApi_JobService
+    container_name: webapi_jobservice
+    ports:
+      - "5008:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_jobstockservice:
+    build: ./WebApi_JobStockService
+    container_name: webapi_jobstockservice
+    ports:
+      - "5009:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_maskservice:
+    build: ./WebApi_MaskService
+    container_name: webapi_maskservice
+    ports:
+      - "5010:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__User=guest
+      - RabbitMQ__Password=guest
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices
+
+  webapi_modelnumberservice:
+    build: ./WebApi_ModelNumberService
+    container_name: webapi_modelnumberservice
+    ports:
+      - "5011:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_modelservice:
+    build: ./WebApi_ModelService
+    container_name: webapi_modelservice
+    ports:
+      - "5012:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_partserviceservice:
+    build: ./WebApi_PartSourceService
+    container_name: webapi_partsourceservice
+    ports:
+      - "5013:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_partspicarchiveservice:
+    build: ./WebApi_PartsPicArchiveService
+    container_name: webapi_partspicarchiveservice
+    ports:
+      - "5014:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_partsservice:
+    build: ./WebApi_PartsService
+    container_name: webapi_partsservice
+    ports:
+      - "5015:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_pricetobtaskservice:
+    build: ./WebApi_PricebotTasksService
+    container_name: webapi_pricebottasksservice
+    ports:
+      - "5016:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_proxyservice:
+    build: ./WebApi_ProxyService
+    container_name: webapi_proxyservice
+    ports:
+      - "5017:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_replacesarchiveservice:
+    build: ./WebApi_ReplacesArchiveService
+    container_name: webapi_replacesarchiveservice
+    ports:
+      - "5018:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_responsesservice:
+    build: ./WebApi_ResponsesService
+    container_name: webapi_responsesservice
+    ports:
+      - "5019:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_sourceservice:
+    build: ./WebApi_SourceService
+    container_name: webapi_sourceservice
+    ports:
+      - "5020:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_stockpicdservice:
+    build: ./WebApi_StockPicsService
+    container_name: webapi_stockpicsservice
+    ports:
+      - "5021:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_stopwordsservice:
+    build: ./WebApi_StopWordsService
+    container_name: webapi_stopwordsservice
+    ports:
+      - "5022:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_uniqmodelservice:
+    build: ./WebApi_UniqModelService
+    container_name: webapi_uniqmodelservice
+    ports:
+      - "5023:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+  webapi_userservice:
+    build: ./WebApi_UserService
+    container_name: webapi_userservice
+    ports:
+      - "5024:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - microservices
+
+networks:
+  microservices:
+    driver: bridge

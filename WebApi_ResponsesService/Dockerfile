@@ -2,20 +2,23 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
+USER $APP_UID
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 6050
+EXPOSE 6051
 
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["WebApi_ResponsesService.csproj", "."]
-RUN dotnet restore "./WebApi_ResponsesService.csproj"
+COPY ["WebApi_ResponsesService/WebApi_ResponsesService.csproj", "WebApi_ResponsesService/"]
+COPY ["2_KameraData/KameraData.csproj", "2_KameraData/"]
+COPY ["SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj", "SharedMicroserviceLibrary/"]
+
+RUN dotnet restore "./WebApi_ResponsesService/WebApi_ResponsesService.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/WebApi_ResponsesService"
 RUN dotnet build "./WebApi_ResponsesService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
