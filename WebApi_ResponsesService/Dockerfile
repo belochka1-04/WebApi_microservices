@@ -1,32 +1,34 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+# See https://aka.ms/customizecontainer to learn how to customize your debug container
+# and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER $APP_UID
 WORKDIR /app
-EXPOSE 6050
-EXPOSE 6051
-
+EXPOSE 80
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["WebApi_ResponsesService/WebApi_ResponsesService.csproj", "WebApi_ResponsesService/"]
-COPY ["2_KameraData/KameraData.csproj", "2_KameraData/"]
-COPY ["SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj", "SharedMicroserviceLibrary/"]
 
-RUN dotnet restore "./WebApi_ResponsesService/WebApi_ResponsesService.csproj"
+# paths are relative to solution root (compose context = .)
+COPY WebApi_ResponsesService/WebApi_ResponsesService.csproj WebApi_ResponsesService/
+COPY 2_KameraData/KameraData.csproj 2_KameraData/
+COPY SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj SharedMicroserviceLibrary/
+
+RUN dotnet restore WebApi_ResponsesService/WebApi_ResponsesService.csproj
+
 COPY . .
-WORKDIR "/src/WebApi_ResponsesService"
-RUN dotnet build "./WebApi_ResponsesService.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR /src/WebApi_ResponsesService
+RUN dotnet build WebApi_ResponsesService.csproj -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./WebApi_ResponsesService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish WebApi_ResponsesService.csproj -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# This stage is used in production or when running from VS in regular mode
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .

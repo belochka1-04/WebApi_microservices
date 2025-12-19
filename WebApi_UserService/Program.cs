@@ -7,6 +7,7 @@ using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
+using SharedMicroserviceLibrary.Middleware;
 using UserService.Consumers;
 using WebApi_UserService.Services;
 
@@ -24,6 +25,7 @@ builder.Services.AddDbContext<KameraDbContext>(options =>
 
 // Регистрация сервисов приложения, с внедрением конкретного DbContext
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 
 // 2. MassTransit с CONSUMER
 builder.Services.AddMassTransit(x =>
@@ -33,7 +35,7 @@ builder.Services.AddMassTransit(x =>
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("rabbitmq://localhost", h =>
+        cfg.Host("rabbitmq", "/", h =>
         {
             h.Username("guest");
             h.Password("guest");

@@ -6,6 +6,7 @@ using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
+using SharedMicroserviceLibrary.Middleware;
 using WebApi_PartSourceService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,7 @@ builder.Services.AddDbContext<KameraDbContext>(options =>
 
 // –егистраци€ сервисов приложени€, с внедрением конкретного DbContext
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 
 // –егистраци€ кросс-сервиса: контроллеры, swagger, json
 builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");

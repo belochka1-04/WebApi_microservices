@@ -76,6 +76,8 @@ namespace SharedMicroserviceLibrary.Middleware
                     _logger.LogError(ex, "Health check failed: {message}", ex.Message);
                     await WriteResponseAsync(context, HttpStatusCode.InternalServerError,
                         new { status = "unhealthy", error = ex.Message });
+                    
+                  
                 }
             }
             else

@@ -7,6 +7,7 @@ using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
+using SharedMicroserviceLibrary.Middleware;
 using WebApi_MaskService.Httpclient;
 using WebApi_MaskService.Interface;
 using WebApi_MaskService.Services;
@@ -42,6 +43,7 @@ builder.Services.AddHttpClient<IJobClient, HttpJobClient>((sp, client) =>
 
 // –егистраци€ сервисов приложени€, с внедрением конкретного DbContext
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 
 // –егистраци€ кросс-сервиса: контроллеры, swagger, json
 builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");

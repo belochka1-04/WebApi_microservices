@@ -1,0 +1,30 @@
+запуск всех
+
+cd D:\job\pasha\microservices
+docker compose up --build -d
+docker compose ps
+
+RabbitMQ UI: http://localhost:15672 (guest / guest). Подключение из сервисов по rabbitmq:5672.
+
+для одного
+cd D:\job\pasha\microservices
+
+# Посмотреть состояние всех контейнеров
+docker compose ps
+
+# Перезапустить только один сервис
+docker compose restart partsourceservice
+
+# Или пересобрать и поднять только его
+docker compose up --build -d partsourceservice
+
+# Логи конкретного сервиса (live tail)
+docker compose logs -f partsourceservice
+
+Если нужно остановить / удалить только один
+# Остановить сервис
+docker compose stop jobservice
+
+# Удалить контейнер, не трогая остальные
+docker compose rm -f jobservice
+​

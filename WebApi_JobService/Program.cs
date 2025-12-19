@@ -8,6 +8,7 @@ using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
+using SharedMicroserviceLibrary.Middleware;
 using WebApi_JobService;
 using WebApi_JobService.Consumer.JobsService.Consumers;
 using WebApi_JobService.Services;
@@ -26,6 +27,7 @@ builder.Services.AddDbContext<KameraDbContext>(options =>
 
 // –егистраци€ сервисов приложени€, с внедрением конкретного DbContext
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 
 // –егистраци€ кросс-сервиса: контроллеры, swagger, json
 builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");
@@ -45,7 +47,7 @@ builder.Services.AddMassTransit(x =>
    
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("rabbitmq://localhost", h =>
+        cfg.Host("rabbitmq", "/", h =>
         {
             h.Username("guest");
             h.Password("guest");
