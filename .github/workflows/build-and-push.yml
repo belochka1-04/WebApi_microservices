@@ -41,7 +41,7 @@ jobs:
             image: partspicarchiveservice
           - folder: PartsService
             image: partsservice
-          - folder: PriceBotTasksService
+          - folder: PricebotTasksService
             image: pricebottasksservice
           - folder: ProxyService
             image: proxyservice
