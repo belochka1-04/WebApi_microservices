@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   applicationservice:
-    image: registry.example.com/applicationservice:latest
+    image: belochka104/applicationservice:latest
     container_name: applicationservice
     ports:
       - "5001:80"
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   jobservice:
-    image: registry.example.com/jobservice:latest
+    image: belochka104/jobservice:latest
     container_name: jobservice
     ports:
       - "5002:80"
@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
 
   modelnumberservice:
-    image: registry.example.com/modelnumberservice:latest
+    image: belochka104/modelnumberservice:latest
     container_name: modelnumberservice
     ports:
       - "5003:80"
@@ -53,7 +53,7 @@ services:
     restart: unless-stopped
 
   maskservice:
-    image: registry.example.com/maskservice:latest
+    image: belochka104/maskservice:latest
     container_name: maskservice
     ports:
       - "5004:80"
@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
 
   partsourceservice:
-    image: registry.example.com/partsourceservice:latest
+    image: belochka104/partsourceservice:latest
     container_name: partsourceservice
     ports:
       - "5005:80"
@@ -75,7 +75,7 @@ services:
     restart: unless-stopped
 
   documentservice:
-    image: registry.example.com/documentservice:latest
+    image: belochka104/documentservice:latest
     container_name: documentservice
     ports:
       - "5006:80"
@@ -86,7 +86,7 @@ services:
     restart: unless-stopped
 
   errorlogservice:
-    image: registry.example.com/errorlogservice:latest
+    image: belochka104/errorlogservice:latest
     container_name: errorlogservice
     ports:
       - "5007:80"
@@ -97,7 +97,7 @@ services:
     restart: unless-stopped
 
   imagejobservice:
-    image: registry.example.com/imagejobservice:latest
+    image: belochka104/imagejobservice:latest
     container_name: imagejobservice
     ports:
       - "5008:80"
@@ -108,7 +108,7 @@ services:
     restart: unless-stopped
 
   jobdocumentservice:
-    image: registry.example.com/jobdocumentservice:latest
+    image: belochka104/jobdocumentservice:latest
     container_name: jobdocumentservice
     ports:
       - "5009:80"
@@ -119,7 +119,7 @@ services:
     restart: unless-stopped
 
   jobstockservice:
-    image: registry.example.com/jobstockservice:latest
+    image: belochka104/jobstockservice:latest
     container_name: jobstockservice
     ports:
       - "5010:80"
@@ -130,7 +130,7 @@ services:
     restart: unless-stopped
 
   modelservice:
-    image: registry.example.com/modelservice:latest
+    image: belochka104/modelservice:latest
     container_name: modelservice
     ports:
       - "5013:80"
@@ -141,7 +141,7 @@ services:
     restart: unless-stopped
 
   partspicarchiveservice:
-    image: registry.example.com/partspicarchiveservice:latest
+    image: belochka104/partspicarchiveservice:latest
     container_name: partspicarchiveservice
     ports:
       - "5014:80"
@@ -152,7 +152,7 @@ services:
     restart: unless-stopped
 
   partsservice:
-    image: registry.example.com/partsservice:latest
+    image: belochka104/partsservice:latest
     container_name: partsservice
     ports:
       - "5015:80"
@@ -163,7 +163,7 @@ services:
     restart: unless-stopped
 
   pricebottasksservice:
-    image: registry.example.com/pricebottasksservice:latest
+    image: belochka104/pricebottasksservice:latest
     container_name: pricebottasksservice
     ports:
       - "5016:80"
@@ -174,7 +174,7 @@ services:
     restart: unless-stopped
 
   proxyservice:
-    image: registry.example.com/proxyservice:latest
+    image: belochka104/proxyservice:latest
     container_name: proxyservice
     ports:
       - "5017:80"
@@ -185,7 +185,7 @@ services:
     restart: unless-stopped
 
   replacesarchiveservice:
-    image: registry.example.com/replacesarchiveservice:latest
+    image: belochka104/replacesarchiveservice:latest
     container_name: replacesarchiveservice
     ports:
       - "5018:80"
@@ -196,7 +196,7 @@ services:
     restart: unless-stopped
 
   responsesservice:
-    image: registry.example.com/responsesservice:latest
+    image: belochka104/responsesservice:latest
     container_name: responsesservice
     ports:
       - "5019:80"
@@ -207,7 +207,7 @@ services:
     restart: unless-stopped
 
   sourceservice:
-    image: registry.example.com/sourceservice:latest
+    image: belochka104/sourceservice:latest
     container_name: sourceservice
     ports:
       - "5020:80"
@@ -218,7 +218,7 @@ services:
     restart: unless-stopped
 
   stockcredsservice:
-    image: registry.example.com/stockcredsservice:latest
+    image: belochka104/stockcredsservice:latest
     container_name: stockcredsservice
     ports:
       - "5021:80"
@@ -229,7 +229,7 @@ services:
     restart: unless-stopped
 
   stopwordsservice:
-    image: registry.example.com/stopwordsservice:latest
+    image: belochka104/stopwordsservice:latest
     container_name: stopwordsservice
     ports:
       - "5022:80"
@@ -240,7 +240,7 @@ services:
     restart: unless-stopped
 
   uniqmodelservice:
-    image: registry.example.com/uniqmodelservice:latest
+    image: belochka104/uniqmodelservice:latest
     container_name: uniqmodelservice
     ports:
       - "5023:80"
@@ -251,12 +251,32 @@ services:
     restart: unless-stopped
 
   userservice:
-    image: registry.example.com/userservice:latest
+    image: belochka104/userservice:latest
     container_name: userservice
     ports:
       - "5024:80"
     env_file:
       - .env.prod
+    networks:
+      - microservices
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - microservices
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
     networks:
       - microservices
     restart: unless-stopped

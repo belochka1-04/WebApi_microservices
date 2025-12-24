@@ -1,0 +1,119 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Сам Prometheus (для самоконтроля)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: 'applicationservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['applicationservice:80']
+
+  - job_name: 'jobservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jobservice:80']
+
+  - job_name: 'modelnumberservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['modelnumberservice:80']
+
+  - job_name: 'maskservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['maskservice:80']
+
+  - job_name: 'partsourceservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['partsourceservice:80']
+
+  - job_name: 'documentservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['documentservice:80']
+
+  - job_name: 'errorlogservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['errorlogservice:80']
+
+  - job_name: 'imagejobservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['imagejobservice:80']
+
+  - job_name: 'jobdocumentservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jobdocumentservice:80']
+
+  - job_name: 'jobstockservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jobstockservice:80']
+
+  - job_name: 'modelservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['modelservice:80']
+
+  - job_name: 'partspicarchiveservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['partspicarchiveservice:80']
+
+  - job_name: 'partsservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['partsservice:80']
+
+  - job_name: 'pricebottasksservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['pricebottasksservice:80']
+
+  - job_name: 'proxyservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['proxyservice:80']
+
+  - job_name: 'replacesarchiveservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['replacesarchiveservice:80']
+
+  - job_name: 'responsesservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['responsesservice:80']
+
+  - job_name: 'sourceservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['sourceservice:80']
+
+  - job_name: 'stockcredsservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['stockcredsservice:80']
+
+  - job_name: 'stopwordsservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['stopwordsservice:80']
+
+  - job_name: 'uniqmodelservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['uniqmodelservice:80']
+
+  - job_name: 'userservice'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['userservice:80']

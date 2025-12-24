@@ -10,6 +10,7 @@ using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
 using UserService.Consumers;
 using WebApi_UserService.Services;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,7 @@ builder.Services.AddDbContext<KameraDbContext>(options =>
 // Регистрация сервисов приложения, с внедрением конкретного DbContext
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
+builder.Services.UseHttpClientMetrics(); // необязательно, но полезно
 
 // 2. MassTransit с CONSUMER
 builder.Services.AddMassTransit(x =>
@@ -67,7 +69,11 @@ app.UseAuthorization();
 
 app.UseHealthCheck();
 app.UseRequestLogging();
+// Метрики HTTP-запросов
+app.UseHttpMetrics();
 
+// endpoint для метрик
+app.MapMetrics("/metrics"); // здесь Prometheus будет их снимать
 app.MapControllers();
 
 app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
