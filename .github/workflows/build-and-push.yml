@@ -14,29 +14,51 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service:
-          - ApplicationService
-          - JobService
-          - ModelNumberService
-          - MaskService
-          - PartSourceService
-          - DocumentService
-          - ErrorLogService
-          - ImageJobService
-          - JobDocumentService
-          - JobStockService
-          - ModelService
-          - PartsPicArchiveService
-          - PartsService
-          - PriceBotTasksService
-          - ProxyService
-          - ReplacesArchiveService
-          - ResponsesService
-          - SourceService
-          - StockCredsService
-          - StopWordsService
-          - UniqModelService
-          - UserService
+        include:
+          - folder: ApplicationService
+            image: applicationservice
+          - folder: JobService
+            image: jobservice
+          - folder: ModelNumberService
+            image: modelnumberservice
+          - folder: MaskService
+            image: maskservice
+          - folder: PartSourceService
+            image: partsourceservice
+          - folder: DocumentService
+            image: documentservice
+          - folder: ErrorLogService
+            image: errorlogservice
+          - folder: ImageJobService
+            image: imagejobservice
+          - folder: JobDocumentService
+            image: jobdocumentservice
+          - folder: JobStockService
+            image: jobstockservice
+          - folder: ModelService
+            image: modelservice
+          - folder: PartsPicArchiveService
+            image: partspicarchiveservice
+          - folder: PartsService
+            image: partsservice
+          - folder: PriceBotTasksService
+            image: pricebottasksservice
+          - folder: ProxyService
+            image: proxyservice
+          - folder: ReplacesArchiveService
+            image: replacesarchiveservice
+          - folder: ResponsesService
+            image: responsesservice
+          - folder: SourceService
+            image: sourceservice
+          - folder: StockCredsService
+            image: stockcredsservice
+          - folder: StopWordsService
+            image: stopwordsservice
+          - folder: UniqModelService
+            image: uniqmodelservice
+          - folder: UserService
+            image: userservice
 
     steps:
       - name: Checkout
@@ -51,14 +73,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.service }}
+      - name: Build and push ${{ matrix.folder }}
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: WebApi_${{ matrix.service }}/Dockerfile
+          file: WebApi_${{ matrix.folder }}/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ lower(matrix.service) }}:latest
-            ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ lower(matrix.service) }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ lower(matrix.service) }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ lower(matrix.service) }}:buildcache,mode=max
+            ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
+            ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:buildcache,mode=max
