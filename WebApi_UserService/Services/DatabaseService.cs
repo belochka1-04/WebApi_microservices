@@ -165,6 +165,50 @@ namespace WebApi_UserService.Services
             }
 
         }
+
+        // Получить остатки пользователя по конкретной детали
+        public async Task<List<UserStock>> GetUserStocksByPartAsync(int partId, int userId)
+        {
+            try
+            {
+                var userStocks = await _dbContext.UserStocks
+                    .Include(us => us.Stock)
+                    .Where(us => us.PartsAndReplacesId == partId && us.UserId == userId)
+                    .ToListAsync();
+
+                return userStocks;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка при получении остатков по детали {partId}: {ex.Message}");
+                throw;
+            }
+        }
+
+        // Получить остатки по списку деталей (для оптимизации N+1)
+        public async Task<List<UserStock>> GetUserStocksByPartsAsync(List<int> partIds, int userId)
+        {
+            try
+            {
+                return await _dbContext.UserStocks
+                    .Include(us => us.Stock)
+                    .Where(us => partIds.Contains(us.PartsAndReplacesId.Value) && us.UserId == userId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка при получении остатков: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<List<UserStock>> GetAllUserStocksByPartAsync(int partId)
+        {
+            return await _dbContext.UserStocks
+                .Where(us => us.PartsAndReplacesId == partId)
+                .Include(us => us.Stock)
+                .ToListAsync();
+        }
         #endregion
 
         #region user

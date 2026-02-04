@@ -3059,6 +3059,61 @@ namespace KameraData.Data
                 .ToTable(tb => tb.UseSqlOutputClause(false));
 
 
+            modelBuilder.Entity<PartsRequest>(entity =>
+            {
+                // Имя таблицы
+                entity.ToTable("Parts_request");
+
+                // Первичный ключ
+                entity.HasKey(e => e.Id)
+                      .HasName("PK_Parts_request_id"); // имя можешь подобрать под свой стиль
+
+                // Колонки
+
+                entity.Property(e => e.Id)
+                    .ValueGeneratedOnAdd()
+                    .HasColumnName("id");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id");
+
+                entity.Property(e => e.StockId)
+                    .HasColumnName("stock_id");
+
+                entity.Property(e => e.PhotoPath)
+                    .HasMaxLength(255)
+                    .HasColumnName("photo_path");
+
+                entity.Property(e => e.RecognizedPartNumber)
+                    .HasMaxLength(50)
+                    .HasColumnName("recognized_part_number");
+
+                entity.Property(e => e.PartsAndReplacesId)
+                    .HasColumnName("parts_and_replaces_id");
+
+                entity.Property(e => e.Status)
+                    .HasColumnName("status"); // tinyint -> byte? в классе
+
+                entity.Property(e => e.CreatedAt)
+                    .IsRequired()
+                    .HasColumnName("created_at");
+
+                entity.Property(e => e.UpdatedAt)
+                    .IsRequired()
+                    .HasColumnName("updated_at");
+
+                entity.Property(e => e.JobId)
+                    .HasColumnName("job_id");
+
+                // Если нужны связи, можно добавить навигации и FK
+                // entity.HasOne(e => e.User)...
+                // entity.HasOne(e => e.Stock)...
+                // entity.HasOne(e => e.PartsAndReplace)...
+
+                // Если нужно отключить OUTPUT clause (как в UserStock):
+                 entity.ToTable(tb => tb.UseSqlOutputClause(false));
+            });
+
 
             modelBuilder.Entity<UserStock>(entity =>
             {

@@ -1,3 +1,4 @@
+using KameraData.Data.Dtos;
 using KameraData.Data.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,27 @@ namespace WebApi_PartsService.Controllers
 
         public PartsAndReplacesController(IDatabaseService databaseService) : base(databaseService)
         {
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<PartsAndReplace>> GetById(int id)
+        {
+            var part = await _databaseService.Get(id); 
+            if (part == null) return NotFound();
+            return Ok(part);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<PartsAndReplace>> Create([FromBody] CreatePartDto dto)
+        {
+            // Создаем и сразу получаем объект с ID
+            var created = await _databaseService.CreatePartAsync(dto.PartNumber);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.Id },
+                created
+            );
         }
 
         [HttpPost("getPartsAndReplaces")]

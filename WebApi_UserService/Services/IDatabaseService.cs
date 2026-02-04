@@ -28,6 +28,9 @@ namespace WebApi_UserService.Services
 
         //для бота
         Task<User?> GetUserByIdAsync(int id);
+
+        Task<List<UserStock>> GetUserStocksByPartAsync(int partId, int userId);
+        Task<List<UserStock>> GetUserStocksByPartsAsync(List<int> partIds, int userId);
         Task<User> CreateOrGetUserAsync(long telegramId, int? referralUserId);
         Task<bool> UpdateUserModeAsync(int userId, byte mode);
 
@@ -37,6 +40,8 @@ namespace WebApi_UserService.Services
         Task<bool> UpdateLastLinkTipAsync(int userId, int tipId);
         Task<bool> UpdateLastRepairVideoAsync(int userId, int videoId);
         Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId);
+
+        Task<List<UserStock>> GetAllUserStocksByPartAsync(int partId);
 
     }
 

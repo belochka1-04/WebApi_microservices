@@ -61,7 +61,7 @@ public partial class KameraDbContext : DbContext
     public virtual DbSet<PricebotTask> PricebotTasks { get; set; }
     public virtual DbSet<UniqModel> UniqModels { get; set; }
     public virtual DbSet<DocumentPdfText> DocumentPdfTexts { get; set; }
-
+    public virtual DbSet<PartsRequest> PartsRequests { get; set; }
 
     /// <summary>
     /// //////////////////////////new struct//////////////////////////////

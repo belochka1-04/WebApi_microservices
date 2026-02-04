@@ -69,6 +69,65 @@ namespace WebApi_PartsService.Services
             }
         }
 
+        public async Task<PartsAndReplace?> Get(int id)
+        {
+            try
+            {
+                // UserStocks удален - он в другом микросервисе и его надо вызывать отдельно
+                return await _dbContext
+                    .PartsAndReplaces
+                    .FirstOrDefaultAsync(part => part.Id == id);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка при получении детали по ID {id}: {ex.Message}");
+                return null;
+            }
+        }
+
+        // Новый метод: Получение последней созданной детали (после вставки)
+        public async Task<PartsAndReplace?> GetLastInsertedByPartNumberAsync(string partNumber)
+        {
+            try
+            {
+                return await _dbContext.PartsAndReplaces
+                    .Where(p => p.MainPartNumber == partNumber)
+                    .OrderByDescending(p => p.Id)
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения последней детали по номеру {partNumber}: {ex.Message}");
+                return null;
+            }
+        }
+
+        // Для POST /api/partsandreplaces - создание с возвратом объекта
+        public async Task<PartsAndReplace> CreatePartAsync(string partNumber)
+        {
+            try
+            {
+                var entity = new PartsAndReplace
+                {
+                    MainPartNumber = partNumber,
+                    Status = "0", // начальный статус (в процессе)
+                    DateUpdate = DateTime.Now
+                };
+
+                await _dbContext.PartsAndReplaces.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
+
+                _logger.Info($"Создана деталь: ID={entity.Id}, Number={partNumber}");
+
+                return entity; // EF уже заполнил Id после SaveChanges
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка создания детали {partNumber}: {ex.Message}");
+                throw;
+            }
+        }
+
         public async Task<List<PartsAndReplace>> GetPartsAndReplacesWithStateAsync(string state)
         {
             try
@@ -292,5 +351,51 @@ namespace WebApi_PartsService.Services
             }
         }
         #endregion
+
+        #region PartsRequests
+        public async Task<PartsRequest> CreateAsync(string recognizedPartNumber, int userId)
+        {
+            try
+            {
+                var request = new PartsRequest
+                {
+                    UserId = userId,
+                    RecognizedPartNumber = recognizedPartNumber,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    PartsAndReplacesId = null // Изначально не привязано к детали
+                };
+
+                await _dbContext.PartsRequests.AddAsync(request);
+                await _dbContext.SaveChangesAsync();
+
+                _logger.Info($"Создан запрос на поиск детали: ID={request.Id}, Number={recognizedPartNumber}, User={userId}");
+
+                return request;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка создания запроса на деталь {recognizedPartNumber}: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<PartsRequest?> GetByIdAsync(int id)
+        {
+            try
+            {
+                return await _dbContext.PartsRequests
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Id == id);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения запроса {id}: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
     }
 }

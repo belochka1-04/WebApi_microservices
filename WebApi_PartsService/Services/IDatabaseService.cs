@@ -20,6 +20,11 @@ namespace WebApi_PartsService.Services
         Task<bool> AddPartsNamesArchive(PartsNamesArchive partsNamesArchive);
         Task<List<Parts>> GetPartsByModelIdAsync(int modelId);
 
+        Task<PartsRequest> CreateAsync(string recognizedPartNumber, int userId);
+        Task<PartsRequest?> GetByIdAsync(int id);
+
+        Task<PartsAndReplace> CreatePartAsync(string partNumber);
+        Task<PartsAndReplace?> Get(int id);
 
     }
 

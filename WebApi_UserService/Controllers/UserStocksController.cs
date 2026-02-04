@@ -35,6 +35,35 @@ namespace WebApi_UserService.Controllers
             return Ok(job);
         }
 
+        // GET /api/userstocks/by-part/{partId}?userId={userId}
+        [HttpGet("by-part/{partId}")]
+        public async Task<ActionResult<List<UserStock>>> GetByPart(int partId, [FromQuery] int userId)
+        {
+            if (userId == 0) return BadRequest("userId required");
+
+            var stocks = await _databaseService.GetUserStocksByPartAsync(partId, userId);
+            return Ok(stocks);
+        }
+
+        // GET /api/userstocks/by-part/{partId}/all - дл€ внутреннего использовани€ (без фильтра по userId)
+        [HttpGet("by-part/{partId}/all")]
+        public async Task<ActionResult<List<UserStock>>> GetAllByPart(int partId)
+        {
+            var stocks = await _databaseService.GetAllUserStocksByPartAsync(partId);
+            return Ok(stocks);
+        }
+
+        // POST /api/userstocks/by-parts (дл€ массовой загрузки)
+        [HttpPost("by-parts")]
+        public async Task<ActionResult<List<UserStock>>> GetByParts([FromBody] List<int> partIds, [FromQuery] int userId)
+        {
+            if (userId == 0) return BadRequest("userId required");
+
+            var stocks = await _databaseService.GetUserStocksByPartsAsync(partIds, userId);
+            return Ok(stocks);
+        }
+
+
         // ћетод дл€ вставки ответа
         [HttpPost("insert")]
         public async Task<IActionResult> InsertUserStockAsync([FromBody] UserStock request)
