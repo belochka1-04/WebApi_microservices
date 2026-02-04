@@ -37,7 +37,7 @@ public partial class User
 
     public string? AllHistory { get; set; }
 
-    public int? TelegramId { get; set; }
+    public long? TelegramId { get; set; }
 
     public string? TelegramState { get; set; }
 
@@ -47,6 +47,21 @@ public partial class User
 
     public byte? TgState { get; set; }
 
+    public DateTime? ProUntil { get; set; }
+    public DateTime? LastUpdatedDateTime { get; set; }
+
+    public int? LastVideoTipId { get; set; }
+    public int? LastLinkTipId { get; set; }
+    public int? LastRepairVideoId { get; set; }
+    public int? LastWarehouseVideoId { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public int LimitedUntil { get; set; }       // NOT NULL
+    public int RequestsLimit { get; set; }      // NOT NULL
+
+    public long? SupportThreadId { get; set; }  // bigint -> long
+    public byte Access { get; set; }            // tinyint -> byte
     public virtual ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     public virtual ICollection<Mask> Masks { get; set; } = new List<Mask>();

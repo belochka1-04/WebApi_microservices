@@ -192,6 +192,20 @@ namespace WebApi_UserService.Services
             }
         }
 
+        public async Task<User?> GetUserByIdAsync(int id)
+        {
+            try
+            {
+                return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            }
+            catch (Exception ex)
+            {
+                var logger = LogManager.GetCurrentClassLogger();
+                logger.Error(ex, $"Ошибка при получении пользователя по Id {id}");
+                throw;
+            }
+        }
+
         public async Task<User> GetUserByTgAsync(int Id)
         {
             try
@@ -212,6 +226,244 @@ namespace WebApi_UserService.Services
                 throw;
             }
         }
+
+        public async Task<User> CreateOrGetUserAsync(long telegramId, int? referralUserId)
+        {
+            try
+            {
+                // 1. Пытаемся найти по TelegramId
+                var existing = await _dbContext.Users
+                    .FirstOrDefaultAsync(u => u.TelegramId == telegramId);
+
+                if (existing != null)
+                    return existing;
+
+                // 2. Опционально найдём реферала по внутреннему Id
+                User? referral = null;
+                if (referralUserId.HasValue)
+                {
+                    referral = await _dbContext.Users
+                        .FirstOrDefaultAsync(u => u.Id == referralUserId.Value);
+
+                    // сам себя реферить нельзя
+                    if (referral?.TelegramId == telegramId)
+                        referral = null;
+                }
+
+                var now = DateTime.Now;
+
+                // 3. Создаём нового пользователя с дефолтами
+                //    Логика по мотивам ApplianceBot.UsersService.create:
+                //    ProUntil = +1 месяц без реферала, +2 месяца с рефералом
+                var proMonths = referral is null ? 1 : 2;
+
+                var user = new User
+                {
+                    TelegramId = telegramId,
+                    PrefersTelegram = "1",
+                    SyncSwitch = "OFF",
+
+                    // 0 = repair/models по умолчанию
+                    TgState = 0,
+
+                    // новые поля
+                    ProUntil = now.AddMonths(proMonths),
+                    LastUpdatedDateTime = now,
+
+                    // остальное — как в SaveDefaultUserToBDAsync
+                    Login = "tg_user",
+                    Password = "tg_user",
+                    CrmId = 1,
+                    CrmLogin = "tg_user",
+                    CrmPassword = "tg_user",
+                    Proxy = "",
+                    SyncFreq = "10",
+                    UpdateStatus = null,
+                    UpdateTime = null,
+                    Code = 0,
+                    PrefersCrm = "0",
+                    PrefersWhatsapp = "0",
+                    AllHistory = "",
+                    TelegramState = null,
+                    ChatId = null,
+                    DiagramProbability = 50,
+                    ManualProbability = 25
+                };
+
+                await _dbContext.Users.AddAsync(user);
+                await _dbContext.SaveChangesAsync();
+
+                // 4. Обновляем ProUntil у реферала, если он есть
+                if (referral is not null)
+                {
+                    referral.ProUntil = (referral.ProUntil ?? now).AddMonths(2);
+                    referral.LastUpdatedDateTime = now;
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                var logger = LogManager.GetCurrentClassLogger();
+                logger.Error(ex, $"Ошибка при создании/получении пользователя по TelegramId {telegramId}");
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateUserModeAsync(int userId, byte mode)
+        {
+            try
+            {
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return false;
+
+                user.TgState = mode;
+                user.LastUpdatedDateTime = DateTime.Now;
+
+                await _dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var logger = LogManager.GetCurrentClassLogger();
+                logger.Error(ex, $"Ошибка при смене режима пользователя {userId} на {mode}");
+                throw;
+            }
+        }
+
+       
+        public async Task<bool> UpdateLastVideoTipAsync(int userId, int tipId)
+        {
+            try
+            {
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return false;
+
+                if (user.LastVideoTipId >= tipId)
+                {
+                    // игнорируем, как и раньше
+                    return true;
+                }
+
+                user.LastVideoTipId = tipId;
+                user.LastUpdatedDateTime = DateTime.Now;
+
+                await _dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var logger = LogManager.GetCurrentClassLogger();
+                logger.Error(ex, $"Ошибка при обновлении LastVideoTipId для пользователя {userId}");
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateLastLinkTipAsync(int userId, int tipId)
+        {
+            try
+            {
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return false;
+
+                if (user.LastLinkTipId >= tipId)
+                    return true;
+
+                user.LastLinkTipId = tipId;
+                user.LastUpdatedDateTime = DateTime.Now;
+
+                await _dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var logger = LogManager.GetCurrentClassLogger();
+                logger.Error(ex, $"Ошибка при обновлении LastLinkTipId для пользователя {userId}");
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateLastRepairVideoAsync(int userId, int videoId)
+{
+    try
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return false;
+
+        if (user.LastRepairVideoId >= videoId)
+            return true;
+
+        user.LastRepairVideoId = videoId;
+        user.LastUpdatedDateTime = DateTime.Now;
+
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+    catch (Exception ex)
+    {
+        var logger = LogManager.GetCurrentClassLogger();
+        logger.Error(ex, $"Ошибка при обновлении LastRepairVideoId для пользователя {userId}");
+        throw;
+    }
+}
+
+public async Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId)
+{
+    try
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return false;
+
+        if (user.LastWarehouseVideoId >= videoId)
+            return true;
+
+        user.LastWarehouseVideoId = videoId;
+        user.LastUpdatedDateTime = DateTime.Now;
+
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+    catch (Exception ex)
+    {
+        var logger = LogManager.GetCurrentClassLogger();
+        logger.Error(ex, $"Ошибка при обновлении LastWarehouseVideoId для пользователя {userId}");
+        throw;
+    }
+}
+
+
+
+
+        public async Task<bool> ExtendProAsync(int userId, int months)
+        {
+            try
+            {
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return false;
+
+                var now = DateTime.Now;
+                // AddMonths корректно учитывает длину месяцев и високосные годы [web:192][web:166]
+                user.ProUntil = (user.ProUntil ?? now).AddMonths(months);
+                user.LastUpdatedDateTime = now;
+
+                await _dbContext.SaveChangesAsync(); // EF сам сформирует UPDATE и выполнит в транзакции [web:193]
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var logger = LogManager.GetCurrentClassLogger();
+                logger.Error(ex, $"Ошибка при продлении Pro пользователю {userId} на {months} месяцев");
+                throw;
+            }
+        }
+
 
         public async Task SaveDefaultUserToBDAsync(int? telegramId, string prefersTelegram)
         {

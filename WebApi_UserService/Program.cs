@@ -2,6 +2,8 @@
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting.WindowsServices;
+using Prometheus;
 using Serilog;
 using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
@@ -10,14 +12,21 @@ using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
 using UserService.Consumers;
 using WebApi_UserService.Services;
-using Prometheus;
 
-var builder = WebApplication.CreateBuilder(args);
+var options = new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = WindowsServiceHelpers.IsWindowsService()
+        ? AppContext.BaseDirectory
+        : default
+};
+
+var builder = WebApplication.CreateBuilder(options);
 
 string connectionString = builder.Configuration.GetConnectionString("KameraDb");
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
+    throw new InvalidOperationException("Connection string not found in configuration.");
 }
 
 // Регистрация DbContext с конкретной строкой подключения
@@ -37,16 +46,24 @@ builder.Services.AddMassTransit(x =>
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("rabbitmq", "/", h =>
+        // читаем настройки из appsettings.json -> секция "RabbitMq"
+        var rabbitSection = builder.Configuration.GetSection("RabbitMq");
+        var host = rabbitSection.GetValue<string>("Host") ?? "localhost";
+        var vhost = rabbitSection.GetValue<string>("VirtualHost") ?? "/";
+        var username = rabbitSection.GetValue<string>("Username") ?? "guest";
+        var password = rabbitSection.GetValue<string>("Password") ?? "guest";
+
+        cfg.Host(host, vhost, h =>
         {
-            h.Username("guest");
-            h.Password("guest");
+            h.Username(username);
+            h.Password(password);
         });
 
         // ✅ Автоматически создаёт очередь для JobCreatedEvent
         cfg.ConfigureEndpoints(context);
     });
 });
+
 
 // Регистрация кросс-сервиса: контроллеры, swagger, json
 builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");
@@ -56,6 +73,7 @@ builder.Services.AddSharedAuthentication(builder.Configuration);
 
 // Логирование Serilog
 builder.Host.UseCustomSerilog();
+builder.Host.UseWindowsService();
 
 var app = builder.Build();
 

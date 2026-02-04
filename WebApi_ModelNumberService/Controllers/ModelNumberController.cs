@@ -88,6 +88,13 @@ namespace WebApi_ModelNumberService.Controllers
             return Ok(result);
         }
 
+        [HttpGet("pick-next-by-confirmed/{confirm}")]
+        public async Task<ActionResult<ModelNumber>> PickNextTask(string confirm)
+        {
+            var result = await _databaseService.PickNextTaskAsync(confirm);
+            return Ok(result);
+        }
+
         [HttpGet("getwaste")]
         public async Task<ActionResult<List<ModelNumber>>> GetWasteTasksAsync()
         {

@@ -1,0 +1,245 @@
+version: "3.8"
+
+services:
+  applicationservice:
+    image: belochka104/applicationservice:win2019
+    container_name: applicationservice
+    ports:
+      - "5001:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      # - RabbitMq__Host=YOUR_RABBITMQ_HOST
+    restart: unless-stopped
+
+  jobservice:
+    image: belochka104/jobservice:win2019
+    container_name: jobservice
+    ports:
+      - "5002:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  modelnumberservice:
+    image: belochka104/modelnumberservice:win2019
+    container_name: modelnumberservice
+    ports:
+      - "5003:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  maskservice:
+    image: belochka104/maskservice:win2019
+    container_name: maskservice
+    ports:
+      - "5004:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  partsourceservice:
+    image: belochka104/partsourceservice:win2019
+    container_name: partsourceservice
+    ports:
+      - "5005:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  documentservice:
+    image: belochka104/documentservice:win2019
+    container_name: documentservice
+    ports:
+      - "5006:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  errorlogservice:
+    image: belochka104/errorlogservice:win2019
+    container_name: errorlogservice
+    ports:
+      - "5007:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  imagejobservice:
+    image: belochka104/imagejobservice:win2019
+    container_name: imagejobservice
+    ports:
+      - "5008:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  jobdocumentservice:
+    image: belochka104/jobdocumentservice:win2019
+    container_name: jobdocumentservice
+    ports:
+      - "5009:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  jobstockservice:
+    image: belochka104/jobstockservice:win2019
+    container_name: jobstockservice
+    ports:
+      - "5010:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  modelservice:
+    image: belochka104/modelservice:win2019
+    container_name: modelservice
+    ports:
+      - "5013:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  partspicarchiveservice:
+    image: belochka104/partspicarchiveservice:win2019
+    container_name: partspicarchiveservice
+    ports:
+      - "5014:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  partsservice:
+    image: belochka104/partsservice:win2019
+    container_name: partsservice
+    ports:
+      - "5015:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  pricebottasksservice:
+    image: belochka104/pricebottasksservice:win2019
+    container_name: pricebottasksservice
+    ports:
+      - "5016:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  proxyservice:
+    image: belochka104/proxyservice:win2019
+    container_name: proxyservice
+    ports:
+      - "5017:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  replacesarchiveservice:
+    image: belochka104/replacesarchiveservice:win2019
+    container_name: replacesarchiveservice
+    ports:
+      - "5018:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  responsesservice:
+    image: belochka104/responsesservice:win2019
+    container_name: responsesservice
+    ports:
+      - "5019:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  sourceservice:
+    image: belochka104/sourceservice:win2019
+    container_name: sourceservice
+    ports:
+      - "5020:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  stockcredsservice:
+    image: belochka104/stockcredsservice:win2019
+    container_name: stockcredsservice
+    ports:
+      - "5021:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  stopwordsservice:
+    image: belochka104/stopwordsservice:win2019
+    container_name: stopwordsservice
+    ports:
+      - "5022:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  uniqmodelservice:
+    image: belochka104/uniqmodelservice:win2019
+    container_name: uniqmodelservice
+    ports:
+      - "5023:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped
+
+  userservice:
+    image: belochka104/userservice:win2019
+    container_name: userservice
+    ports:
+      - "5024:80"
+    env_file:
+      - .env.prod
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    restart: unless-stopped

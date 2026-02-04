@@ -72,6 +72,37 @@ namespace WebApi_ModelNumberService.Services
             }
         }
 
+        public async Task<ModelNumber> PickNextTaskAsync(string Conf)
+        {
+            try
+            {
+                using var tx = await _dbContext.Database.BeginTransactionAsync();
+
+                var task = await _dbContext.ModelNumbers
+                    .Where(m => m.Confirmed == Conf)
+                    .OrderBy(m => m.Id)
+                    .FirstOrDefaultAsync();
+
+                if (task == null)
+                {
+                    await tx.CommitAsync();
+                    return null;
+                }
+
+                task.Confirmed = "-1"; // в  работе
+                task.GotForWorkAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return task;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка при получении следующей задачи: {ex.Message}");
+                return null; // Возвращаем null в случае ошибки
+            }
+        }
+
         public async Task<List<ModelNumber>> GetNextTasksWithConfAsync(string Conf)
         {
             try

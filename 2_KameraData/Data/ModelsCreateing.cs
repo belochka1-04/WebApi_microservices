@@ -2903,6 +2903,10 @@ namespace KameraData.Data
 
                 entity.HasIndex(e => e.CrmId, "CRM_id");
 
+                // уникальный индекс по TelegramId (анти-дубликат)
+                entity.HasIndex(e => e.TelegramId)
+                      .IsUnique();
+
                 entity.Property(e => e.Id)
                     .ValueGeneratedOnAdd()
                     .HasColumnName("id");
@@ -2942,10 +2946,12 @@ namespace KameraData.Data
                     .HasDefaultValue("10");
 
                 entity.Property(e => e.SyncSwitch)
+                    .HasMaxLength(3)
                     .HasColumnName("sync_switch")
                     .HasDefaultValue("ON");
 
                 entity.Property(e => e.UpdateStatus)
+                    .HasMaxLength(20)
                     .HasColumnName("update_status")
                     .HasDefaultValue(null);
 
@@ -2953,19 +2959,26 @@ namespace KameraData.Data
                     .HasColumnName("update_time")
                     .HasDefaultValue(null);
 
+                entity.Property(e => e.ChatId)
+                    .HasColumnName("chat_id")
+                    .HasDefaultValue(null);
+
                 entity.Property(e => e.Code)
                     .HasColumnName("code")
                     .HasDefaultValue(123);
 
                 entity.Property(e => e.PrefersCrm)
+                    .HasMaxLength(1)
                     .HasColumnName("prefers_crm")
                     .HasDefaultValue("0");
 
                 entity.Property(e => e.PrefersWhatsapp)
+                    .HasMaxLength(1)
                     .HasColumnName("prefers_whatsapp")
                     .HasDefaultValue("0");
 
                 entity.Property(e => e.PrefersTelegram)
+                    .HasMaxLength(1)
                     .HasColumnName("prefers_telegram")
                     .HasDefaultValue("0");
 
@@ -2979,11 +2992,13 @@ namespace KameraData.Data
                     .HasDefaultValue(null);
 
                 entity.Property(e => e.TelegramState)
+                    .HasMaxLength(20)
                     .HasColumnName("telegram_state")
                     .HasDefaultValue(null);
 
-                entity.Property(e => e.ChatId)
-                    .HasColumnName("chat_id")
+                entity.Property(e => e.LastUpdatedDateTime)
+                    .HasColumnName("lastUpdatedDateTime")
+                    .HasColumnType("datetime")
                     .HasDefaultValue(null);
 
                 entity.Property(e => e.DiagramProbability)
@@ -2995,11 +3010,54 @@ namespace KameraData.Data
                     .HasDefaultValue(25);
 
                 entity.Property(e => e.TgState)
-                    .HasColumnName("tg_state")
-                    ;
+                    .HasColumnName("tg_state");
+
+                entity.Property(e => e.ProUntil)
+                    .HasColumnName("pro_until")
+                    .HasColumnType("datetime")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.LastRepairVideoId)
+                    .HasColumnName("last_repair_video_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.LastWarehouseVideoId)
+                    .HasColumnName("last_warehouse_video_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnName("created_at")
+                    .HasColumnType("datetime")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.LastVideoTipId)
+                    .HasColumnName("last_video_tip_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.LastLinkTipId)
+                    .HasColumnName("last_link_tip_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.LimitedUntil)
+                    .HasColumnName("limited_until")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.RequestsLimit)
+                    .HasColumnName("requests_limit")
+                    .HasDefaultValue(100);
+
+                entity.Property(e => e.SupportThreadId)
+                    .HasColumnName("support_thread_id")
+                    .HasDefaultValue(null);
+
+                entity.Property(e => e.Access)
+                    .HasColumnName("access")
+                    .HasDefaultValue(0);
             });
+
             modelBuilder.Entity<User>()
-         .ToTable(tb => tb.UseSqlOutputClause(false));
+                .ToTable(tb => tb.UseSqlOutputClause(false));
+
 
 
             modelBuilder.Entity<UserStock>(entity =>

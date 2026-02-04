@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration.GetConnectionString("KameraDb");
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
+    throw new InvalidOperationException("Connection string not found in configuration.");
 }
 
 // Регистрация DbContext с конкретной строкой подключения

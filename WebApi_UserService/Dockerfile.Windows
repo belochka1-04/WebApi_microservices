@@ -1,0 +1,34 @@
+# escape=`
+
+# Базовый образ ASP.NET Core 8.0 для Windows Server Core 2022
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-windowsservercore-ltsc2022 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+# Образ SDK для сборки
+FROM mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2022 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+
+# Пути относительно корня решения (как у тебя и было)
+COPY WebApi_UserService/WebApi_UserService.csproj WebApi_UserService/
+COPY 2_KameraData/KameraData.csproj 2_KameraData/
+COPY SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj SharedMicroserviceLibrary/
+
+RUN dotnet restore WebApi_UserService/WebApi_UserService.csproj
+
+COPY . .
+WORKDIR /src/WebApi_UserService
+RUN dotnet build WebApi_UserService.csproj -c %BUILD_CONFIGURATION% -o /app/build
+
+# Публикуем сервис
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish WebApi_UserService.csproj -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+
+# Финальный образ
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "WebApi_UserService.dll"]
