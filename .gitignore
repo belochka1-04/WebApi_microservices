@@ -364,3 +364,5 @@ FodyWeavers.xsd
 /WebApi_ApplicationService/Dockerfile.original
 /WebApi_UserService/appsettings.json
 /WebApi_PartsService/appsettings.json
+/WebApi_JobDocumentService/appsettings.json
+/WebApi_ModelNumberService/appsettings.json
