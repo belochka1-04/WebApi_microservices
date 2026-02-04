@@ -63,6 +63,12 @@ public partial class KameraDbContext : DbContext
     public virtual DbSet<DocumentPdfText> DocumentPdfTexts { get; set; }
     public virtual DbSet<PartsRequest> PartsRequests { get; set; }
 
+    public virtual DbSet<DocumentQa> DocumentQas { get; set; }
+    public virtual DbSet<DocumentAnalysis> DocumentAnalysiss { get; set; }
+    public virtual DbSet<DocumentGenericQa> DocumentGenericQas { get; set; }
+    public virtual DbSet<GenericQuestion> GenericQuestions { get; set; }
+
+
     /// <summary>
     /// //////////////////////////new struct//////////////////////////////
     /// </summary>

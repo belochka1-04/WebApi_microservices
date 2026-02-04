@@ -107,6 +107,31 @@ namespace WebApi_ModelNumberService.Controllers
             }
             return Ok(result);
         }
+
+        // GET api/modelnumber/by-job/123
+        [HttpGet("by-job/{jobId:int}")]
+        public async Task<ActionResult<List<ModelNumber>>> GetByJob(int jobId)
+        {
+            var result = await _databaseService.GetModelNumbersByJobAsync(jobId);
+            return Ok(result);
+        }
+
+        // GET api/modelnumber/{id}
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<ModelNumber>> GetById(int id)
+        {
+            var model = await _databaseService.GetModelNumberByIdAsync(id);
+            if (model == null) return NotFound();
+            return Ok(model);
+        }
+
+        // GET api/modelnumber/notfound/by-job/123
+        [HttpGet("notfound/by-job/{jobId:int}")]
+        public async Task<ActionResult<List<ModelsNumbersNotFound>>> GetNotFoundByJob(int jobId)
+        {
+            var result = await _databaseService.GetModelNumbersNotFoundByJobAsync(jobId);
+            return Ok(result);
+        }
     }
 
 

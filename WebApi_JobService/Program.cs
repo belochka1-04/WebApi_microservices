@@ -13,9 +13,17 @@ using SharedMicroserviceLibrary.Middleware;
 using WebApi_JobService;
 using WebApi_JobService.Consumer.JobsService.Consumers;
 using WebApi_JobService.Services;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Prometheus;
 
-var builder = WebApplication.CreateBuilder(args);
+var options = new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = WindowsServiceHelpers.IsWindowsService()
+        ? AppContext.BaseDirectory
+        : default
+};
+var builder = WebApplication.CreateBuilder(options);
 
 string connectionString = builder.Configuration.GetConnectionString("KameraDb");
 if (string.IsNullOrEmpty(connectionString))
@@ -61,6 +69,7 @@ builder.Services.AddMassTransit(x =>
 // Логирование Serilog
 builder.Host.UseCustomSerilog();
 
+builder.Host.UseWindowsService();
 var app = builder.Build();
 
 app.UseSwagger();

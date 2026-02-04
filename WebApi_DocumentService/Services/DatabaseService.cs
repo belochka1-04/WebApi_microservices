@@ -79,5 +79,101 @@ namespace WebApi_document.Services
             }
         }
         #endregion
+
+        #region DocumentQa
+
+        public async Task<DocumentQa?> GetDocumentQaByIdAsync(int id)
+        {
+            return await _dbContext.DocumentQas
+                .AsNoTracking()
+                .OrderByDescending(qa => qa.Id)
+                .FirstOrDefaultAsync(qa => qa.Id == id);
+        }
+        public async Task<DocumentQa> CreateDocumentQaAsync(int analysisId, string question)
+        {
+            var qa = new DocumentQa
+            {
+                AnalysisId = analysisId,
+                Question = question,
+                Status = 0, // начальный статус
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.DocumentQas.Add(qa);
+            await _dbContext.SaveChangesAsync();
+            return qa;
+        }
+
+        public async Task<List<DocumentQa>> GetDocumentQasByAnalysisIdAsync(int analysisId)
+        {
+            return await _dbContext.DocumentQas
+                .AsNoTracking()
+                .Where(qa => qa.AnalysisId == analysisId)
+                .OrderByDescending(qa => qa.Id)
+                .ToListAsync();
+        }
+
+        public async Task UpdateDocumentQaStatusAsync(int id, int status)
+        {
+            var qa = await _dbContext.DocumentQas.FindAsync(id);
+            if (qa != null)
+            {
+                qa.Status = status;
+               
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+        #endregion
+
+        #region DocumentAnalysis
+
+        public async Task<DocumentAnalysis?> GetDocumentAnalysisByIdAsync(int id)
+        {
+            return await _dbContext.DocumentAnalysiss
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == id);
+        }
+
+        public async Task<DocumentAnalysis?> GetDocumentAnalysisWithIncludesAsync(int id)
+        {
+            return await _dbContext.DocumentAnalysiss
+                .AsNoTracking()
+                .Include(a => a.DocumentGenericQas)
+                .Include(a => a.DocumentQas)
+                .Where(a => a.Id == id)
+                .OrderByDescending(a => a.DocumentId)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<DocumentAnalysis?> GetDocumentAnalysisByDocumentIdAsync(int documentId)
+        {
+            return await _dbContext.DocumentAnalysiss
+                .AsNoTracking()
+                .Where(a => a.DocumentId == documentId)
+                .OrderByDescending(a => a.DocumentId)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<DocumentAnalysis> CreateDocumentAnalysisAsync(int documentId)
+        {
+            var analysis = new DocumentAnalysis
+            {
+                DocumentId = documentId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.DocumentAnalysiss.Add(analysis);
+            await _dbContext.SaveChangesAsync();
+            return analysis;
+        }
+
+        public async Task<List<DocumentGenericQa>> GetDocumentGenericQasByAnalysisIdAsync(int analysisId)
+        {
+            return await _dbContext.DocumentGenericQas
+                .AsNoTracking()
+                .Where(gqa => gqa.AnalysisId == analysisId)
+                .ToListAsync();
+        }
+        #endregion
     }
 }

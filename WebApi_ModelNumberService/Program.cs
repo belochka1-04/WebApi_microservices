@@ -8,9 +8,18 @@ using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
 using WebApi_ModelNumberService.Services;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Prometheus;
 
-var builder = WebApplication.CreateBuilder(args);
+var options = new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = WindowsServiceHelpers.IsWindowsService()
+        ? AppContext.BaseDirectory
+        : default
+};
+
+var builder = WebApplication.CreateBuilder(options);
 
 string connectionString = builder.Configuration.GetConnectionString("KameraDb");
 if (string.IsNullOrEmpty(connectionString))
@@ -34,6 +43,7 @@ builder.Services.AddSharedAuthentication(builder.Configuration);
 
 // Логирование Serilog
 builder.Host.UseCustomSerilog();
+builder.Host.UseWindowsService();
 
 var app = builder.Build();
 

@@ -24,7 +24,14 @@ namespace WebApi_ModelNumberService.Services
         Task InsertModelNumberNotFoundAsync(int jobId, string modelNumber);
         Task DeleteModelNumbersNotFoundAsync(int jobId);
 
+        // Чтение ModelNumbers по Job
+        Task<List<ModelNumber>> GetModelNumbersByJobAsync(int jobId);
 
+        // Одна модель по Id (для LookupModel)
+        Task<ModelNumber?> GetModelNumberByIdAsync(int id);
+
+        // NotFound‑модели по Job
+        Task<List<ModelsNumbersNotFound>> GetModelNumbersNotFoundByJobAsync(int jobId);
     }
 
 }

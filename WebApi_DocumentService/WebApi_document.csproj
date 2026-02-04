@@ -17,10 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\2_KameraData\KameraData.csproj" />
     <ProjectReference Include="..\SharedMicroserviceLibrary\SharedMicroserviceLibrary.csproj" />
   </ItemGroup>

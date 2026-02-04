@@ -297,6 +297,55 @@ namespace WebApi_ModelNumberService.Services
                 _logger.Error($"Ошибка при обновлении статуса задачи с ID {taskId}: {ex.Message}");
             }
         }
+
+        public async Task<List<ModelNumber>> GetModelNumbersByJobAsync(int jobId)
+        {
+            try
+            {
+                return await _dbContext.ModelNumbers
+                    .AsNoTracking()
+                    .Where(m => m.JobId == jobId)
+                    .Include(m => m.Job)   // как в старом коде JobsService
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при получении ModelNumber по JobId {jobId}", jobId);
+                return new List<ModelNumber>();
+            }
+        }
+
+        public async Task<ModelNumber?> GetModelNumberByIdAsync(int id)
+        {
+            try
+            {
+                return await _dbContext.ModelNumbers
+                    .Include(m => m.Job)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при получении ModelNumber по Id {id}", id);
+                return null;
+            }
+        }
+
+        public async Task<List<ModelsNumbersNotFound>> GetModelNumbersNotFoundByJobAsync(int jobId)
+        {
+            try
+            {
+                return await _dbContext.ModelsNumbersNotFounds
+                    .AsNoTracking()
+                    .Where(m => m.JobId == jobId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при получении ModelsNumbersNotFounds по JobId {jobId}", jobId);
+                return new List<ModelsNumbersNotFound>();
+            }
+        }
+
         #endregion
 
         #region models_numbers_not_found

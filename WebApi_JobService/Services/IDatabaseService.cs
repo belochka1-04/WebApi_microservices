@@ -20,6 +20,14 @@ namespace WebApi_JobService.Services
         Task<Job> AddJobByTgAsync(int Id);
         Task<JobDto?> GetJobDtoByIdAsync(int jobId);
 
+        Task<int> GetTodaysOperationsCountAsync(int userId);
+
+        Task<Job> CreateJobFromTextAsync(int userId, string? content, string? brand);
+
+        Task<Job> CreateJobFromImageAsync(CreateJobFromImageDto dto);
+
+        Task<Job?> GetFullJobByIdAsync(int jobId);
+
     }
 
 }

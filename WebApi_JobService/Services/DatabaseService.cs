@@ -312,6 +312,119 @@ namespace WebApi_JobService.Services
             return newJob;
         }
 
+        public async Task<int> GetTodaysOperationsCountAsync(int userId)
+        {
+            try
+            {
+                var today = DateTime.Today;
+
+                return await _dbContext.Jobs
+                    .Where(j => j.UserId == userId && j.CreatedAt >= today)
+                    .CountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при подсчете операций за сегодня для пользователя {userId}", userId);
+                return 0;
+            }
+        }
+
+        public async Task<Job> CreateJobFromTextAsync(int userId, string? content, string? brand)
+        {
+            try
+            {
+                var job = new Job
+                {
+                    UserId = userId,
+                    JobNumber = null,
+                    JobLink = null,
+                    Token = null,
+                    UpdateRequestStatus = null,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _dbContext.Jobs.AddAsync(job);
+
+                var note = new JobDescriptionAndNote
+                {
+                    Job = job,
+                    JobId = job.Id,        // EF сам подставит после SaveChanges, но можно оставить явно
+                    JobDescription = content,
+                    OriginalBrand = brand,
+                    Status = "0"
+                };
+
+                await _dbContext.JobDescriptionAndNotes.AddAsync(note);
+                await _dbContext.SaveChangesAsync();
+
+                return job;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при создании задания из текста для пользователя {userId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<Job> CreateJobFromImageAsync(CreateJobFromImageDto dto)
+        {
+            try
+            {
+                var job = new Job
+                {
+                    UserId = dto.UserId,
+                    JobNumber = null,
+                    JobLink = null,
+                    Token = null,
+                    UpdateRequestStatus = null,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _dbContext.Jobs.AddAsync(job);
+
+                var note = new JobDescriptionAndNote
+                {
+                    Job = job,
+                    JobId = job.Id,
+                    OriginalBrand = dto.Brand,
+                    Model = dto.ModelNumber,
+                    JobDescription = dto.ModelNumber,
+                    StickerLink = dto.ImageUrl,
+                    SerialNumber = dto.SerialNumber,
+                    Status = "0"
+                };
+
+                await _dbContext.JobDescriptionAndNotes.AddAsync(note);
+
+                // если позже решишь хранить распознавания, тут можно добавлять связанные сущности
+
+                await _dbContext.SaveChangesAsync();
+
+                return job;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при создании задания из изображения для пользователя {userId}", dto.UserId);
+                throw;
+            }
+        }
+
+        public async Task<Job?> GetFullJobByIdAsync(int jobId)
+        {
+            try
+            {
+                return await _dbContext.Jobs
+                    .Include(j => j.JobDescriptionAndNote)
+                    .Include(j => j.JobDocs)
+                    .FirstOrDefaultAsync(j => j.Id == jobId);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при получении полного Job {jobId}", jobId);
+                return null;
+            }
+        }
+
 
         #endregion
 

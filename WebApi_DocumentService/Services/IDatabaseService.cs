@@ -11,6 +11,19 @@ namespace WebApi_document.Services
         Task<KameraData.Data.Models.Document> GetDocByIdAsync(int ID);
         Task<DocumentPdfText> GetDocPdfByIdAsync(int docID);
 
+        // Для DocumentQasController:
+        Task<DocumentQa?> GetDocumentQaByIdAsync(int id);
+        Task<DocumentQa> CreateDocumentQaAsync(int analysisId, string question);
+        Task<List<DocumentQa>> GetDocumentQasByAnalysisIdAsync(int analysisId);
+        Task UpdateDocumentQaStatusAsync(int id, int status);
+
+        // Для DocumentAnalysesController:
+        Task<DocumentAnalysis?> GetDocumentAnalysisByIdAsync(int id);
+        Task<DocumentAnalysis?> GetDocumentAnalysisWithIncludesAsync(int id); // Include GenericQas + Qas
+        Task<DocumentAnalysis?> GetDocumentAnalysisByDocumentIdAsync(int documentId);
+        Task<DocumentAnalysis> CreateDocumentAnalysisAsync(int documentId);
+        Task<List<DocumentGenericQa>> GetDocumentGenericQasByAnalysisIdAsync(int analysisId);
+
     }
 
 }

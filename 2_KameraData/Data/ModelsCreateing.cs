@@ -1661,7 +1661,8 @@ namespace KameraData.Data
                    .HasColumnName("image_tokens"); // Указывает, что поле может быть NULL
                 entity.Property(e => e.StickerLink)
                    .HasColumnName("sticker_link"); // Указывает, что поле может быть NULL
-
+                entity.Property(e => e.OriginalBrand)
+                .HasColumnName("original_brand"); // Указывает, что поле может быть NULL
 
                 entity.HasOne(d => d.Job) // Укажите соответствующую сущность
                     .WithOne(p => p.JobDescriptionAndNote) // Укажите, как будет выглядеть связь
@@ -3404,7 +3405,144 @@ namespace KameraData.Data
                     .ToTable(tb => tb.UseSqlOutputClause(false));
             });
 
+            modelBuilder.Entity<DocumentQa>(entity =>
+            {
+                entity.ToTable("document_qa");
 
+                entity.HasIndex(e => e.AnalysisId, "IX_DocumentQA_AnalysisId");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("Id");
+
+                entity.Property(e => e.Question)
+                      .IsRequired()
+                      .HasMaxLength(256)
+                      .HasColumnName("Question");
+
+                entity.Property(e => e.Answer)
+                      .HasColumnName("Answer");
+
+                entity.Property(e => e.Status)
+                      .HasColumnName("Status");
+
+                entity.Property(e => e.AnalysisId)
+                      .HasColumnName("AnalysisId");
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnName("CreatedAt")
+                      .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Analysis)
+                      .WithMany(p => p.DocumentQas)
+                      .HasForeignKey(d => d.AnalysisId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .HasConstraintName("FK_DocumentQa_Analysis");
+
+                entity.HasMany(d => d.DocumentGenericQas)
+                      .WithOne(p => p.Qa)
+                      .HasForeignKey(d => d.Qaid)
+                      .HasConstraintName("FK_DocumentGenericQa_Qa");
+            });
+
+            // DocumentAnalysis
+            modelBuilder.Entity<DocumentAnalysis>(entity =>
+            {
+                entity.ToTable("document_analysis");
+
+                entity.HasIndex(e => e.DocumentId, "IX_document_analysis_DocumentId");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("Id");
+
+                entity.Property(e => e.DocumentId)
+                      .HasColumnName("DocumentId");
+
+                entity.Property(e => e.Status)
+                      .HasColumnName("Status");
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnName("CreatedAt")
+                      .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Document);
+
+                entity.HasMany(d => d.DocumentGenericQas)
+                      .WithOne(p => p.Analysis)
+                      .HasForeignKey(d => d.AnalysisId)
+                      .HasConstraintName("FK_DocumentGenericQa_Analysis");
+
+                entity.HasMany(d => d.DocumentQas)
+                      .WithOne(p => p.Analysis)
+                      .HasForeignKey(d => d.AnalysisId)
+                      .HasConstraintName("FK_DocumentQa_Analysis");
+            });
+
+            // DocumentGenericQa
+            modelBuilder.Entity<DocumentGenericQa>(entity =>
+            {
+                entity.ToTable("document_generic_qa");
+
+                entity.HasIndex(e => e.AnalysisId, "IX_DocumentGenericQA_AnalysisId");
+                entity.HasIndex(e => e.QuestionId, "IX_DocumentGenericQA_QuestionId");
+                entity.HasIndex(e => e.Qaid, "IX_document_generic_qa_QAId");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("Id");
+
+                entity.Property(e => e.QuestionId)
+                      .HasColumnName("QuestionId");
+
+                entity.Property(e => e.Qaid)
+                      .HasColumnName("QAId");
+
+                entity.Property(e => e.AnalysisId)
+                      .HasColumnName("AnalysisId");
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnName("CreatedAt")
+                      .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Analysis)
+                      .WithMany(p => p.DocumentGenericQas)
+                      .HasForeignKey(d => d.AnalysisId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .HasConstraintName("FK_DocumentGenericQa_Analysis");
+
+                entity.HasOne(d => d.Qa)
+                      .WithMany(p => p.DocumentGenericQas)
+                      .HasForeignKey(d => d.Qaid)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .HasConstraintName("FK_DocumentGenericQa_Qa");
+
+                entity.HasOne(d => d.Question)
+                      .WithMany(p => p.DocumentGenericQas)
+                      .HasForeignKey(d => d.QuestionId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .HasConstraintName("FK_DocumentGenericQa_GenericQuestion");
+            });
+
+            // GenericQuestion
+            modelBuilder.Entity<GenericQuestion>(entity =>
+            {
+                entity.ToTable("generic_questions");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("Id");
+
+                entity.Property(e => e.Question)
+                      .IsRequired()
+                      .HasColumnType("nvarchar(max)")
+                      .HasColumnName("Question");
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnName("CreatedAt")
+                      .HasColumnType("datetime");
+
+                entity.HasMany(d => d.DocumentGenericQas)
+                      .WithOne(p => p.Question)
+                      .HasForeignKey(d => d.QuestionId)
+                      .HasConstraintName("FK_DocumentGenericQa_GenericQuestion");
+            });
         }
     }
 

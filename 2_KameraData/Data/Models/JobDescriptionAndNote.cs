@@ -29,6 +29,7 @@ public partial class JobDescriptionAndNote
     [Column("completion_cost")] public decimal? CompletionCost { get; set; }
     [Column("image_tokens")] public int? ImageTokens { get; set; }
     [Column("sticker_link")] public string? StickerLink { get; set; }
+    [Column("original_brand")] public string? OriginalBrand { get; set; }
 
     public virtual Job Job { get; set; } = null!;
 }
