@@ -366,3 +366,6 @@ FodyWeavers.xsd
 /WebApi_PartsService/appsettings.json
 /WebApi_JobDocumentService/appsettings.json
 /WebApi_ModelNumberService/appsettings.json
+/WebApi_OnboardingVideoService/appsettings.json
+/WebApi_OnboardingVideoService/appsettings.Development.json
+/WebApi_ModelService/appsettings.json
