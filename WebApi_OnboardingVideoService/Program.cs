@@ -7,20 +7,10 @@ using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
-using WebApi_JobDocumentService.Services;
-using Microsoft.Extensions.Hosting.WindowsServices;
+using WebApi_OnboardingVideoService.Services;
 using Prometheus;
 
-var options = new WebApplicationOptions
-{
-    Args = args,
-    ContentRootPath = WindowsServiceHelpers.IsWindowsService()
-        ? AppContext.BaseDirectory
-        : default
-};
-
-var builder = WebApplication.CreateBuilder(options);
-
+var builder = WebApplication.CreateBuilder(args);
 
 string connectionString = builder.Configuration.GetConnectionString("KameraDb");
 if (string.IsNullOrEmpty(connectionString))
@@ -36,6 +26,7 @@ builder.Services.AddDbContext<KameraDbContext>(options =>
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 builder.Services.UseHttpClientMetrics(); // необязательно, но полезно
+
 // Регистрация кросс-сервиса: контроллеры, swagger, json
 builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");
 
@@ -44,7 +35,6 @@ builder.Services.AddSharedAuthentication(builder.Configuration);
 
 // Логирование Serilog
 builder.Host.UseCustomSerilog();
-builder.Host.UseWindowsService();
 
 var app = builder.Build();
 

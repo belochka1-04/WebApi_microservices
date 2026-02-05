@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using KameraData.Data.Models;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
@@ -99,6 +100,13 @@ public partial class KameraDbContext : DbContext
     public virtual DbSet<LevaModel> LevaModels { get; set; }
 
     public virtual DbSet<SharedStock> SharedStocks { get; set; }
+
+    public virtual DbSet<OnboardingVideo> OnboardingVideos { get; set; }
+
+    public virtual DbSet<Issue> Issues { get; set; }
+
+    public virtual DbSet<TipsVideo> TipsVideos { get; set; }
+    public virtual DbSet<TipsLink> TipsLinks { get; set; }
 
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
