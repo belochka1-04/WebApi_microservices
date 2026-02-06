@@ -421,5 +421,140 @@ namespace WebApi_ModelService.Services
             }
         }
         #endregion
+
+
+        public async Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false)
+        {
+            try
+            {
+                _dbContext.Database.SetCommandTimeout(180);
+
+                var query = _dbContext.Models.AsQueryable();
+
+                if (includeBrandModel)
+                {
+                    query = query.Include(m => m.BrandModel)
+                                 .ThenInclude(bm => bm.Brand);
+                }
+
+                if (includeSite)
+                {
+                    query = query.Include(m => m.Site);
+                }
+
+                var model = await query.FirstOrDefaultAsync(m => m.Id == id);
+
+                _logger.Info($"Получена модель {id}, Include: BrandModel={includeBrandModel}, Site={includeSite}");
+
+                return model;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения модели {id}: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<List<Model>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false)
+        {
+            try
+            {
+                _dbContext.Database.SetCommandTimeout(180);
+
+                var query = _dbContext.Models.Where(m => ids.Contains(m.Id));
+
+                if (includeBrandModel)
+                {
+                    query = query.Include(m => m.BrandModel)
+                                 .ThenInclude(bm => bm.Brand);
+                }
+public async Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false)
+        {
+            try
+            {
+                _dbContext.Database.SetCommandTimeout(180);
+
+                var query = _dbContext.Models.AsQueryable();
+
+                if (includeBrandModel)
+                {
+                    query = query.Include(m => m.BrandModel)
+                                 .ThenInclude(bm => bm.Brand);
+                }
+
+                if (includeSite)
+                {
+                    query = query.Include(m => m.Site);
+                }
+
+                var model = await query.FirstOrDefaultAsync(m => m.Id == id);
+
+                _logger.Info($"Получена модель {id}, Include: BrandModel={includeBrandModel}, Site={includeSite}");
+
+                return model;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения модели {id}: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<List<Model>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false)
+        {
+            try
+            {
+                _dbContext.Database.SetCommandTimeout(180);
+
+                var query = _dbContext.Models.Where(m => ids.Contains(m.Id));
+
+                if (includeBrandModel)
+                {
+                    query = query.Include(m => m.BrandModel)
+                                 .ThenInclude(bm => bm.Brand);
+                }
+
+                if (includeSite)
+                {
+                    query = query.Include(m => m.Site);
+                }
+
+                var models = await query.ToListAsync();
+
+                _logger.Info($"Получено {models.Count} моделей по списку ID (из {ids.Length} запрошенных)");
+
+                return models;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения моделей по списку ID: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task UpdateModelLinkStateAsync(int id, int linkState)
+        {
+            try
+            {
+                _dbContext.Database.SetCommandTimeout(180);
+
+                var model = await _dbContext.Models.FirstOrDefaultAsync(m => m.Id == id);
+
+                if (model == null)
+                {
+                    throw new KeyNotFoundException($"Модель с ID {id} не найдена");
+                }
+
+                var oldState = model.LinkState;
+                model.LinkState = linkState;
+                await _dbContext.SaveChangesAsync();
+
+                _logger.Info($"Обновлено состояние ссылки модели {id}: {oldState} → {linkState}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка обновления состояния ссылки модели {id}: {ex.Message}");
+                throw;
+            }
+        }
     }
-}

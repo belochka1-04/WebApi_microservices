@@ -214,10 +214,87 @@ namespace WebApi_JobDocumentService.Services
                 return new JobDoc();
             }
         }
+        /// <summary>
+        /// Получить ВСЕ JobDocs по jobId
+        /// </summary>
+        public async Task<List<JobDoc>> GetAllJobDocsByJobIdAsync(int jobId)
+        {
+            try
+            {
+                return await _dbContext.JobDocs
+                    .Where(j => j.JobId == jobId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения JobDocs по jobId {jobId}: {ex.Message}");
+                return new List<JobDoc>();
+            }
+        }
+
+        /// <summary>
+        /// Получить JobDocs по jobId с фильтрами
+        /// </summary>
+        public async Task<List<JobDoc>> GetJobDocsByJobIdWithFiltersAsync(
+            int jobId,
+            int? siteState = null,
+            int? docState = null,
+            int? partCountState = null,
+            string? documentType = null,
+            string? cleanedModel = null)
+        {
+            try
+            {
+                var query = _dbContext.JobDocs.Where(j => j.JobId == jobId);
+
+                if (siteState.HasValue)
+                    query = query.Where(j => j.siteState == siteState.Value);
+
+                if (docState.HasValue)
+                    query = query.Where(j => j.docState == docState.Value);
+
+                if (partCountState.HasValue)
+                    query = query.Where(j => j.partCountState == partCountState.Value);
+
+                if (!string.IsNullOrEmpty(documentType))
+                    query = query.Where(j => j.DocumentType == documentType);
+
+                if (!string.IsNullOrEmpty(cleanedModel))
+                    query = query.Where(j => j.CleanedModel == cleanedModel);
+
+                return await query.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения JobDocs с фильтрами для jobId {jobId}: {ex.Message}");
+                return new List<JobDoc>();
+            }
+        }
+
+        /// <summary>
+        /// Получить JobDocs по списку ID
+        /// </summary>
+        public async Task<List<JobDoc>> GetJobDocsByIdsAsync(int[] ids)
+        {
+            try
+            {
+                return await _dbContext.JobDocs
+                    .Where(j => ids.Contains(j.Id))
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Ошибка получения JobDocs по списку ID: {ex.Message}");
+                return new List<JobDoc>();
+            }
+        }
+    
+
+
         #endregion
 
-        #region job_docs_info
-        public async Task InsertJobDocsInfoAsync(int jobId, int taskId, int gotPartsListPdfId)
+#region job_docs_info
+public async Task InsertJobDocsInfoAsync(int jobId, int taskId, int gotPartsListPdfId)
         {
 
             try

@@ -11,7 +11,6 @@ namespace KameraData.Data;
 
 public partial class KameraDbContext : DbContext
 {
-    public string _databaseType = "MSSQL";
     public KameraDbContext()
     {
     }
@@ -108,42 +107,31 @@ public partial class KameraDbContext : DbContext
     public virtual DbSet<TipsVideo> TipsVideos { get; set; }
     public virtual DbSet<TipsLink> TipsLinks { get; set; }
 
+    public virtual DbSet<ModelTb> ModelTbs { get; set; }
 
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    //        => optionsBuilder.UseMySql(_connectionString, Microsoft.EntityFrameworkCore.ServerVersion.Parse("5.7.21-mysql"));
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (optionsBuilder.IsConfigured) return;
 
-        if (_connectionString.Contains("Trusted_Connection")|| (_connectionString.Contains("User Id"))) // Признак MSSQL
-        {
             optionsBuilder.UseSqlServer(_connectionString);
-            _databaseType = "MSSQL";
-        }
-        else // Признак MySQL
-        {
-            optionsBuilder.UseMySql(_connectionString, Microsoft.EntityFrameworkCore.ServerVersion.Parse("5.7.21-mysql"));
-            _databaseType = "MySQL";
-        }
+           
     }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var gh = _databaseType;
+       
+       
 
-        ModelsCreateing modelCreat = new ModelsCreateing();
+        OnModelCreatingPartial(modelBuilder);
 
         modelBuilder
-            .UseCollation("utf8_general_ci")
-            .HasCharSet("utf8");
-        if(gh == "MySQL")
-            modelCreat.OnModelMySqlCreating(modelBuilder);
-        else
-            modelCreat.OnModelMsSqlCreating(modelBuilder);
-     
+           .UseCollation("utf8_general_ci")
+           .HasCharSet("utf8");
+
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(KameraDbContext).Assembly);
 
         OnModelCreatingPartial(modelBuilder);
     }

@@ -17,7 +17,26 @@ namespace WebApi_JobDocumentService.Services
         Task<JobDoc> GetMainDoc(int jobID);
         Task<JobDoc> GetPdfDoc(int jobID);
         Task InsertJobDocsInfoAsync(int jobId, int taskId, int gotPartsListPdfId);
+        /// <summary>
+        /// Получить все JobDocs по jobId
+        /// </summary>
+        Task<List<JobDoc>> GetAllJobDocsByJobIdAsync(int jobId);
 
+        /// <summary>
+        /// Получить JobDocs по jobId с фильтрами
+        /// </summary>
+        Task<List<JobDoc>> GetJobDocsByJobIdWithFiltersAsync(
+            int jobId,
+            int? siteState = null,
+            int? docState = null,
+            int? partCountState = null,
+            string? documentType = null,
+            string? cleanedModel = null);
+
+        /// <summary>
+        /// Получить JobDocs по списку ID
+        /// </summary>
+        Task<List<JobDoc>> GetJobDocsByIdsAsync(int[] ids);
 
     }
 
