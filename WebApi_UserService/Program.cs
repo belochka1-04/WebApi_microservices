@@ -6,8 +6,8 @@ using Prometheus;
 using Serilog;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
-using SharedMicroserviceLibrary.Middleware;
 using SharedMicroserviceLibrary.Logging;
+using SharedMicroserviceLibrary.Middleware;
 using UserService.Consumers;
 using WebApi_UserService.Services;
 
@@ -21,24 +21,28 @@ var options = new WebApplicationOptions
 
 var builder = WebApplication.CreateBuilder(options);
 
-// =====================================================
+// ================================
 // 1. DATABASE CONFIGURATION
-// =====================================================
-string connectionString = builder.Configuration.GetConnectionString("KameraDb")
+// ================================
+var connectionString = builder.Configuration.GetConnectionString("KameraDb")
     ?? throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
 
-builder.Services.AddDbContext<KameraDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<KameraDbContext>(opt =>
+    opt.UseSqlServer(connectionString));
 
-// =====================================================
+// ================================
 // 2. APPLICATION SERVICES
-// =====================================================
+// ================================
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 
-// =====================================================
+builder.Services.Configure<AuthClientOptions>(
+    builder.Configuration.GetSection("AuthService"));
+builder.Services.AddHttpClient<IAuthTokenProvider, AuthTokenProvider>();
+
+// ================================
 // 3. MASSTRANSIT (RabbitMQ)
-// =====================================================
+// ================================
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<JobCreatedConsumer>();
@@ -46,6 +50,7 @@ builder.Services.AddMassTransit(x =>
     x.UsingRabbitMq((context, cfg) =>
     {
         var rabbitSection = builder.Configuration.GetSection("RabbitMq");
+
         cfg.Host(
             rabbitSection.GetValue<string>("Host") ?? "localhost",
             rabbitSection.GetValue<string>("VirtualHost") ?? "/",
@@ -59,72 +64,71 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-// =====================================================
-// 4. SHARED SERVICES (Controllers, Swagger, JSON)
-// =====================================================
+// ================================
+// 4. CONTROLLERS + SWAGGER + JSON
+// ================================
 builder.Services.AddCustomServices(
     builder.Configuration,
     apiTitle: "User Service API",
     apiVersion: "v1",
     addJwtToSwagger: true);
 
-// =====================================================
-// 5. JWT AUTHENTICATION
-// =====================================================
+// ================================
+// 5. JWT AUTHENTICATION (принимаем токены AuthService)
+// ================================
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
-// =====================================================
+// ================================
 // 6. LOGGING (Serilog)
-// =====================================================
+// ================================
 builder.Host.UseCustomSerilog();
 
-// =====================================================
+// ================================
 // 7. WINDOWS SERVICE SUPPORT
-// =====================================================
+// ================================
 builder.Host.UseWindowsService();
 
-// =====================================================
+// ================================
 // 8. PROMETHEUS METRICS
-// =====================================================
+// ================================
 builder.Services.UseHttpClientMetrics();
 
 var app = builder.Build();
 
-// =====================================================
+// ================================
 // MIDDLEWARE PIPELINE
-// =====================================================
+// ================================
 
-// Swagger UI (только для dev/staging)
+// Swagger UI
 if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "User Service API v1");
-        c.RoutePrefix = string.Empty; // Swagger на корневом URL
+        c.RoutePrefix = string.Empty; // Swagger на корне: http://localhost:7050/
     });
 }
 
 app.UseHttpsRedirection();
 
-// Health check endpoint
+// Healthcheck
 app.UseHealthCheck();
 
 // Request logging
 app.UseRequestLogging();
 
-// Authentication & Authorization (ПОРЯДОК ВАЖЕН!)
+// Auth
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Prometheus metrics
+// Prometheus
 app.UseHttpMetrics();
 app.MapMetrics("/metrics");
 
 // Controllers
 app.MapControllers();
 
-// Graceful shutdown
 app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.Run();
