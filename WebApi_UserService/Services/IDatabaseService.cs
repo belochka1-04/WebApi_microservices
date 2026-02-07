@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace WebApi_UserService.Services
 {
-  
-    public interface IDatabaseService:KameraData.SharedMicroservicesLibrary.Services.IDatabaseService
+
+    public interface IDatabaseService : KameraData.SharedMicroservicesLibrary.Services.IDatabaseService
     {
         Task<List<UserStock>> GetStockById(int userId);
         Task InsertUserStockAsync(UserStock responce);
@@ -44,5 +44,4 @@ namespace WebApi_UserService.Services
         Task<List<UserStock>> GetAllUserStocksByPartAsync(int partId);
 
     }
-
 }

@@ -109,6 +109,8 @@ public partial class KameraDbContext : DbContext
 
     public virtual DbSet<ModelTb> ModelTbs { get; set; }
 
+    public virtual DbSet<ApiClient> ApiClients { get; set; }
+
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

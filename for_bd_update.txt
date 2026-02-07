@@ -1,0 +1,32 @@
+CREATE TABLE [dbo].[ApiClients]
+(
+    [Id]               INT IDENTITY(1,1)      NOT NULL CONSTRAINT PK_ApiClients_Id PRIMARY KEY,
+    
+    -- Публичный идентификатор клиента (используется в client_id)
+    [ClientId]         NVARCHAR(100)          NOT NULL,
+    
+    -- Хеш секрета (BCrypt/Argon2 и т.п.), НЕ сам секрет
+    [ClientSecretHash] NVARCHAR(200)          NOT NULL,
+
+    -- Человеко‑читаемое имя клиента (для логов/админки)
+    [Name]             NVARCHAR(200)          NOT NULL,
+
+    -- Разрешённые scopes, можно хранить через пробел или в JSON
+    [AllowedScopes]    NVARCHAR(400)          NULL,
+
+    -- Признак активности клиента
+    [IsActive]         BIT                    NOT NULL CONSTRAINT DF_ApiClients_IsActive DEFAULT (1),
+
+    -- Доп. ограничения (опционально)
+    [AllowedIps]       NVARCHAR(400)          NULL,
+    [AllowedOrigins]   NVARCHAR(400)          NULL,
+
+    -- Аудит
+    [CreatedAt]        DATETIME2              NOT NULL CONSTRAINT DF_ApiClients_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    [CreatedBy]        NVARCHAR(100)          NULL,
+    [LastUpdatedAt]    DATETIME2              NULL,
+    [LastUpdatedBy]    NVARCHAR(100)          NULL
+);
+
+-- Уникальный индекс по ClientId
+CREATE UNIQUE INDEX IX_ApiClients_ClientId ON [dbo].[ApiClients]([ClientId]);

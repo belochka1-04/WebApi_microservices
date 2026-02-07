@@ -1,5 +1,6 @@
 using KameraData.Data.Dtos;
 using KameraData.Data.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_UserService.Services;
 
@@ -7,6 +8,7 @@ namespace WebApi_UserService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class UserController : BaseControllerClass
     {
 

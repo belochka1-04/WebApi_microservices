@@ -15,12 +15,12 @@ namespace WebApi_UserService.Services
     public class DatabaseService : IDatabaseService, IDatabaseHealthCheck
     {
         private readonly KameraDbContext _dbContext;
-        private readonly NLog.ILogger _logger;
+        private readonly ILogger<DatabaseService> _logger;
 
-        public DatabaseService(KameraDbContext dbContext)
+        public DatabaseService(KameraDbContext dbContext, ILogger<DatabaseService> logger)
         {
             _dbContext = dbContext;
-            _logger = LogManager.GetCurrentClassLogger();
+            _logger = logger;
         }
 
         public async Task<bool> IsDatabaseHealthyAsync()
@@ -31,7 +31,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Ошибка проверки подключения к базе данных");
+                _logger.LogError(ex, "Ошибка проверки подключения к базе данных");
                 return false;
             }
         }
@@ -51,14 +51,12 @@ namespace WebApi_UserService.Services
             }
             catch (DbUpdateException ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при получении запасов пользователя (userId: {stockId}): {ex.Message}");
+                _logger.LogError($"Ошибка при получении запасов пользователя (userId: {stockId}): {ex.Message}");
                 throw; // Пробрасываем исключение дальше
             }
             catch (Exception ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Необработанная ошибка при получении запасов пользователя (userId: {stockId}): {ex.Message}");
+                _logger.LogError($"Необработанная ошибка при получении запасов пользователя (userId: {stockId}): {ex.Message}");
                 throw; // Пробрасываем исключение дальше
             }
         }
@@ -75,14 +73,12 @@ namespace WebApi_UserService.Services
             }
             catch (DbUpdateException ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при получении stock creds): {ex.Message}");
+                _logger.LogError($"Ошибка при получении stock creds): {ex.Message}");
                 throw; // Пробрасываем исключение дальше
             }
             catch (Exception ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Необработанная ошибка при получении stock creds): {ex.Message}");
+                _logger.LogError($"Необработанная ошибка при получении stock creds): {ex.Message}");
                 throw; // Пробрасываем исключение дальше
             }
         }
@@ -112,14 +108,12 @@ namespace WebApi_UserService.Services
             }
             catch (DbUpdateException ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при получении видимых запасов пользователя (userId: {userId}): {ex.Message}");
+                _logger.LogError($"Ошибка при получении видимых запасов пользователя (userId: {userId}): {ex.Message}");
                 throw;
             }
             catch (Exception ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Необработанная ошибка при получении видимых запасов пользователя (userId: {userId}): {ex.Message}");
+                _logger.LogError($"Необработанная ошибка при получении видимых запасов пользователя (userId: {userId}): {ex.Message}");
                 throw;
             }
         }
@@ -137,8 +131,7 @@ namespace WebApi_UserService.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Ошибка: {ex.Message}");
-                    Logger logger = LogManager.GetCurrentClassLogger();
-                    logger.Error("Ошибка:" + ex);
+                    _logger.LogError("Ошибка:" + ex);
                 }
             }
 
@@ -161,7 +154,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                _logger.Error($"Ошибка при удалении userStocks для Id {Id}: {ex.Message}");
+                _logger.LogError($"Ошибка при удалении userStocks для Id {Id}: {ex.Message}");
             }
 
         }
@@ -180,7 +173,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                _logger.Error($"Ошибка при получении остатков по детали {partId}: {ex.Message}");
+                _logger.LogError($"Ошибка при получении остатков по детали {partId}: {ex.Message}");
                 throw;
             }
         }
@@ -197,7 +190,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                _logger.Error($"Ошибка при получении остатков: {ex.Message}");
+                _logger.LogError($"Ошибка при получении остатков: {ex.Message}");
                 throw;
             }
         }
@@ -224,14 +217,12 @@ namespace WebApi_UserService.Services
             }
             catch (DbUpdateException ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при получении CRM_id для пользователя (userId: {UserId}): {ex.Message}");
+                _logger.LogError($"Ошибка при получении CRM_id для пользователя (userId: {UserId}): {ex.Message}");
                 throw; // Пробрасываем исключение дальше, если нужно
             }
             catch (Exception ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Необработанная ошибка при получении CRM_id для пользователя (userId: {UserId}): {ex.Message}");
+                _logger.LogError($"Необработанная ошибка при получении CRM_id для пользователя (userId: {UserId}): {ex.Message}");
                 throw;
             }
         }
@@ -244,8 +235,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Error(ex, $"Ошибка при получении пользователя по Id {id}");
+                _logger.LogError(ex, $"Ошибка при получении пользователя по Id {id}");
                 throw;
             }
         }
@@ -259,14 +249,12 @@ namespace WebApi_UserService.Services
             }
             catch (DbUpdateException ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при получении  пользователя (TgId: {Id}): {ex.Message}");
+                _logger.LogError($"Ошибка при получении  пользователя (TgId: {Id}): {ex.Message}");
                 throw; // Пробрасываем исключение дальше, если нужно
             }
             catch (Exception ex)
             {
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Необработанная ошибка при получении пользователя (TgId: {Id}): {ex.Message}");
+                _logger.LogError($"Необработанная ошибка при получении пользователя (TgId: {Id}): {ex.Message}");
                 throw;
             }
         }
@@ -349,8 +337,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Error(ex, $"Ошибка при создании/получении пользователя по TelegramId {telegramId}");
+                _logger.LogError(ex, $"Ошибка при создании/получении пользователя по TelegramId {telegramId}");
                 throw;
             }
         }
@@ -371,8 +358,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Error(ex, $"Ошибка при смене режима пользователя {userId} на {mode}");
+                _logger.LogError(ex, $"Ошибка при смене режима пользователя {userId} на {mode}");
                 throw;
             }
         }
@@ -400,8 +386,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Error(ex, $"Ошибка при обновлении LastVideoTipId для пользователя {userId}");
+                _logger.LogError(ex, $"Ошибка при обновлении LastVideoTipId для пользователя {userId}");
                 throw;
             }
         }
@@ -425,8 +410,7 @@ namespace WebApi_UserService.Services
             }
             catch (Exception ex)
             {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Error(ex, $"Ошибка при обновлении LastLinkTipId для пользователя {userId}");
+                _logger.LogError(ex, $"Ошибка при обновлении LastLinkTipId для пользователя {userId}");
                 throw;
             }
         }
@@ -450,8 +434,7 @@ namespace WebApi_UserService.Services
     }
     catch (Exception ex)
     {
-        var logger = LogManager.GetCurrentClassLogger();
-        logger.Error(ex, $"Ошибка при обновлении LastRepairVideoId для пользователя {userId}");
+        _logger.LogError(ex, $"Ошибка при обновлении LastRepairVideoId для пользователя {userId}");
         throw;
     }
 }
@@ -475,8 +458,7 @@ public async Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId)
     }
     catch (Exception ex)
     {
-        var logger = LogManager.GetCurrentClassLogger();
-        logger.Error(ex, $"Ошибка при обновлении LastWarehouseVideoId для пользователя {userId}");
+        _logger.LogError(ex, $"Ошибка при обновлении LastWarehouseVideoId для пользователя {userId}");
         throw;
     }
 }
@@ -502,8 +484,7 @@ public async Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId)
             }
             catch (Exception ex)
             {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Error(ex, $"Ошибка при продлении Pro пользователю {userId} на {months} месяцев");
+                _logger.LogError(ex, $"Ошибка при продлении Pro пользователю {userId} на {months} месяцев");
                 throw;
             }
         }
@@ -555,8 +536,7 @@ public async Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId)
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка: {ex.Message}");
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при сохранении пользователя: {ex}");
+                _logger.LogError($"Ошибка при сохранении пользователя: {ex}");
                 throw;
             }
         }
@@ -580,8 +560,7 @@ public async Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId)
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка: {ex.Message}");
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при сохранении пользователя: {ex}");
+                _logger.LogError($"Ошибка при сохранении пользователя: {ex}");
             }
         }
 
@@ -630,11 +609,12 @@ public async Task<bool> UpdateLastWarehouseVideoAsync(int userId, int videoId)
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка: {ex.Message}");
-                Logger logger = LogManager.GetCurrentClassLogger();
-                logger.Error($"Ошибка при обновлении пользователя: {ex}");
+                _logger.LogError($"Ошибка при обновлении пользователя: {ex}");
             }
         }
 
         #endregion
+
+        
     }
 }

@@ -1,15 +1,13 @@
 ﻿using KameraData.Data;
 using MassTransit;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Prometheus;
 using Serilog;
-using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
-using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
+using SharedMicroserviceLibrary.Logging;
 using UserService.Consumers;
 using WebApi_UserService.Services;
 
@@ -23,77 +21,110 @@ var options = new WebApplicationOptions
 
 var builder = WebApplication.CreateBuilder(options);
 
-string connectionString = builder.Configuration.GetConnectionString("KameraDb");
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException("Connection string not found in configuration.");
-}
+// =====================================================
+// 1. DATABASE CONFIGURATION
+// =====================================================
+string connectionString = builder.Configuration.GetConnectionString("KameraDb")
+    ?? throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
 
-// Регистрация DbContext с конкретной строкой подключения
 builder.Services.AddDbContext<KameraDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Регистрация сервисов приложения, с внедрением конкретного DbContext
+// =====================================================
+// 2. APPLICATION SERVICES
+// =====================================================
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
-builder.Services.UseHttpClientMetrics(); // необязательно, но полезно
 
-// 2. MassTransit с CONSUMER
+// =====================================================
+// 3. MASSTRANSIT (RabbitMQ)
+// =====================================================
 builder.Services.AddMassTransit(x =>
 {
-    // Регистрируем Consumer (обработчик событий)
     x.AddConsumer<JobCreatedConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        // читаем настройки из appsettings.json -> секция "RabbitMq"
         var rabbitSection = builder.Configuration.GetSection("RabbitMq");
-        var host = rabbitSection.GetValue<string>("Host") ?? "localhost";
-        var vhost = rabbitSection.GetValue<string>("VirtualHost") ?? "/";
-        var username = rabbitSection.GetValue<string>("Username") ?? "guest";
-        var password = rabbitSection.GetValue<string>("Password") ?? "guest";
+        cfg.Host(
+            rabbitSection.GetValue<string>("Host") ?? "localhost",
+            rabbitSection.GetValue<string>("VirtualHost") ?? "/",
+            h =>
+            {
+                h.Username(rabbitSection.GetValue<string>("Username") ?? "guest");
+                h.Password(rabbitSection.GetValue<string>("Password") ?? "guest");
+            });
 
-        cfg.Host(host, vhost, h =>
-        {
-            h.Username(username);
-            h.Password(password);
-        });
-
-        // ✅ Автоматически создаёт очередь для JobCreatedEvent
         cfg.ConfigureEndpoints(context);
     });
 });
 
+// =====================================================
+// 4. SHARED SERVICES (Controllers, Swagger, JSON)
+// =====================================================
+builder.Services.AddCustomServices(
+    builder.Configuration,
+    apiTitle: "User Service API",
+    apiVersion: "v1",
+    addJwtToSwagger: true);
 
-// Регистрация кросс-сервиса: контроллеры, swagger, json
-builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");
+// =====================================================
+// 5. JWT AUTHENTICATION
+// =====================================================
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
-// JWT аутентификация, если нужно
-builder.Services.AddSharedAuthentication(builder.Configuration);
-
-// Логирование Serilog
+// =====================================================
+// 6. LOGGING (Serilog)
+// =====================================================
 builder.Host.UseCustomSerilog();
+
+// =====================================================
+// 7. WINDOWS SERVICE SUPPORT
+// =====================================================
 builder.Host.UseWindowsService();
+
+// =====================================================
+// 8. PROMETHEUS METRICS
+// =====================================================
+builder.Services.UseHttpClientMetrics();
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// =====================================================
+// MIDDLEWARE PIPELINE
+// =====================================================
+
+// Swagger UI (только для dev/staging)
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "User Service API v1");
+        c.RoutePrefix = string.Empty; // Swagger на корневом URL
+    });
+}
 
 app.UseHttpsRedirection();
 
+// Health check endpoint
+app.UseHealthCheck();
+
+// Request logging
+app.UseRequestLogging();
+
+// Authentication & Authorization (ПОРЯДОК ВАЖЕН!)
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHealthCheck();
-app.UseRequestLogging();
-// Метрики HTTP-запросов
+// Prometheus metrics
 app.UseHttpMetrics();
+app.MapMetrics("/metrics");
 
-// endpoint для метрик
-app.MapMetrics("/metrics"); // здесь Prometheus будет их снимать
+// Controllers
 app.MapControllers();
 
+// Graceful shutdown
 app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.Run();
