@@ -30,6 +30,7 @@ public partial class JobDescriptionAndNote
     [Column("image_tokens")] public int? ImageTokens { get; set; }
     [Column("sticker_link")] public string? StickerLink { get; set; }
     [Column("original_brand")] public string? OriginalBrand { get; set; }
+    [Column("google_confirmed")] public int? GoogleConfirmed { get; set; }
 
     public virtual Job Job { get; set; } = null!;
 }

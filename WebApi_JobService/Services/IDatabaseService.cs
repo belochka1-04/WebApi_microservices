@@ -15,6 +15,8 @@ namespace WebApi_JobService.Services
         Task UpdateDescriptionAndNotesDescriptionAsync(int jobId, string fulltext);
         Task UpdateDescriptionAndNotesPicCountAsync(int jobId, int pic_count);
         Task InsertDescriptionAndNotesDescriptionAsync(int jobId, string fulltext);
+
+        Task MarkJobDescriptionsGoogleConfirmedAsync(string requestWord);
         Task<Job> GetJobByIdAsync(int jobId);
         Task<IEnumerable<Job>> GetJobByLink(string jobLink);
         Task<Job> AddJobByTgAsync(int Id);

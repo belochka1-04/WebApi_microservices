@@ -9,50 +9,42 @@ namespace WebApi_ModelCatalogService.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class BrandController : BaseControllerClass
+    public class BrandModelController : BaseControllerClass
     {
 
-        public BrandController(IDatabaseService databaseService) : base(databaseService)
+        public BrandModelController(IDatabaseService databaseService) : base(databaseService)
         {
         }
 
 
-		/// <summary>
-		/// Получить бренд по ID
-		/// GET /api/Brand/{id}
-		/// </summary>
-		/// <param name="id">ID бренда</param>
-		/// <returns>Объект Brand</returns>
-		[HttpGet("{id}")]
-		[ProducesResponseType(typeof(Brand), StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status404NotFound)]
-		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
-		public async Task<ActionResult<Brand>> GetById(int id)
-		{
-			try
-			{
-				var brand = await _databaseService.GetBrandByIdAsync(id);
+        /// <summary>
+        /// Получить или создать BrandModel по названию бренда и сайту.
+        /// POST /api/BrandModel/get-or-create
+        /// </summary>
+        /// <param name="request">
+        /// Объект запроса с названием бренда (BrandTitle) и идентификатором сайта (SiteId).
+        /// Если BrandModel не существует, будет создан новый Brand и BrandModel.
+        /// </param>
+        /// <returns>Объект BrandModel.</returns>
 
-				if (brand == null)
-				{
-					return NotFound($"Бренд с ID {id} не найден");
-				}
+        [HttpPost("get-or-create")]
+        public async Task<ActionResult<BrandModel>> GetOrCreateBrandModel([FromBody] GetOrCreateBrandModelRequest request)
+        {
+            var brandModel = await _databaseService.GetOrCreateBrandModelAsync(request.BrandTitle, request.SiteId);
+            if (brandModel == null)
+                return BadRequest("BrandTitle is required.");
 
-				return Ok(brand);
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, $"Ошибка получения бренда: {ex.Message}");
-			}
-		}
+            return Ok(brandModel);
+        }
 
-		/// <summary>
-		/// Получить бренды по списку ID
-		/// GET /api/Brand/by-ids?ids=1,2,3
-		/// </summary>
-		/// <param name="ids">Массив ID брендов</param>
-		/// <returns>Список объектов Brand</returns>
-		[HttpGet("by-ids")]
+
+        /// <summary>
+        /// Получить бренды по списку ID
+        /// GET /api/Brand/by-ids?ids=1,2,3
+        /// </summary>
+        /// <param name="ids">Массив ID брендов</param>
+        /// <returns>Список объектов Brand</returns>
+        [HttpGet("by-ids")]
 		[ProducesResponseType(typeof(List<Brand>), StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]

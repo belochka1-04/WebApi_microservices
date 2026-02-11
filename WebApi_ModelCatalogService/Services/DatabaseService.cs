@@ -133,7 +133,6 @@ namespace WebApi_ModelCatalogService.Services
 		}
 		#endregion
 
-
 		#region Brands
 
 		public async Task<Brand?> GetBrandByIdAsync(int id)
@@ -283,11 +282,59 @@ namespace WebApi_ModelCatalogService.Services
 			}
 		}
 
-		#endregion
+        public async Task<BrandModel?> GetOrCreateBrandModelAsync(string? brandTitle, int siteId)
+        {
+            if (string.IsNullOrWhiteSpace(brandTitle))
+                return null;
 
-		#region Models
+            try
+            {
+                // 1. Ищем BrandModel по коду и сайту
+                var existing = await _dbContext.BrandModels
+                    .Include(bm => bm.Brand)
+                    .FirstOrDefaultAsync(bm => bm.Code == brandTitle && bm.SiteId == siteId);
 
-		public async Task<ModelTb?> GetModelByIdAsync(
+                if (existing != null)
+                    return existing;
+
+                // 2. Ищем или создаём Brand
+                var brand = await _dbContext.Brands
+                    .FirstOrDefaultAsync(b => b.Title == brandTitle);
+
+                if (brand == null)
+                {
+                    brand = new Brand { Title = brandTitle };
+                    _dbContext.Brands.Add(brand);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                // 3. Создаём BrandModel
+                var brandModel = new BrandModel
+                {
+                    Code = brandTitle,
+                    BrandId = brand.Id,
+                    SiteId = siteId,
+                    Cnt = 0
+                };
+
+                _dbContext.BrandModels.Add(brandModel);
+                await _dbContext.SaveChangesAsync();
+
+                return brandModel;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка GetOrCreateBrandModelAsync для {BrandTitle} / SiteId={SiteId}", brandTitle, siteId);
+                throw;
+            }
+        }
+
+
+        #endregion
+
+        #region Models
+
+        public async Task<ModelTb?> GetModelByIdAsync(
 			int id,
 			bool includeBrandModel = false,
 			bool includeSite = false)
@@ -382,8 +429,157 @@ namespace WebApi_ModelCatalogService.Services
 				throw;
 			}
 		}
+        ////////////////////////////////////////////для googleupdater//////////////////////////////////////////
+        /// <summary>
+        /// Получить модель по ключу (SiteId + BrandModelId + CleanedModel).
+        /// </summary>
+        public async Task<ModelTb?> GetModelBySiteAndKeyAsync(
+            int siteId,
+            int brandModelId,
+            string cleanedModel,
+            bool includeBrandModel = false,
+            bool includeSite = false)
+        {
+            try
+            {
+                var query = _dbContext.ModelTbs
+                    .Where(m => m.SiteId == siteId &&
+                                m.BrandModelId == brandModelId &&
+                                m.CleanedModel == cleanedModel);
 
-		#endregion
-	}
+                if (includeBrandModel)
+                {
+                    query = query.Include(m => m.BrandModel!)
+                                 .ThenInclude(bm => bm.Brand);
+                }
+
+                if (includeSite)
+                {
+                    query = query.Include(m => m.Site);
+                }
+
+                var model = await query.FirstOrDefaultAsync();
+
+                _logger.Debug(
+                    "Получена модель по ключу SiteId={SiteId}, BrandModelId={BrandModelId}, CleanedModel={CleanedModel}",
+                    siteId, brandModelId, cleanedModel);
+
+                return model;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex,
+                    "Ошибка получения модели по ключу SiteId={SiteId}, BrandModelId={BrandModelId}, CleanedModel={CleanedModel}",
+                    siteId, brandModelId, cleanedModel);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Создать новую модель.
+        /// </summary>
+        public async Task<int> InsertModelAsync(ModelTb model)
+        {
+            try
+            {
+                _dbContext.ModelTbs.Add(model);
+                await _dbContext.SaveChangesAsync();
+
+                _logger.Info("Создана новая модель Id={Id}, Title={Title}", model.Id, model.Title);
+                return model.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при создании модели Title={Title}", model.Title);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Сохранить запись в истории изменения ссылок модели.
+        /// </summary>
+        public async Task InsertModelLinkHistoryAsync(ModelLinkHistory history)
+        {
+            try
+            {
+                _dbContext.ModelLinkHistories.Add(history);
+                await _dbContext.SaveChangesAsync();
+
+                _logger.Info("Добавлена запись в history для ModelId={ModelId}", history.ModelId);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка при добавлении записи history для ModelId={ModelId}", history.ModelId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Обновить ссылку модели с записью в history и установкой LinkState = 1.
+        /// </summary>
+        public async Task UpdateModelLinkAsync(int id, string newLink, string source)
+        {
+            try
+            {
+                var model = await _dbContext.ModelTbs.FirstOrDefaultAsync(m => m.Id == id);
+                if (model == null)
+                    throw new KeyNotFoundException($"Модель с ID {id} не найдена");
+
+                var oldLink = model.Link;
+
+                // если ссылка реально изменилась — пишем history
+                if (!string.Equals(oldLink, newLink, StringComparison.OrdinalIgnoreCase))
+                {
+                    var history = new ModelLinkHistory
+                    {
+                        ModelId = id,
+                        OldLink = oldLink,
+                        ChangedAt = DateTime.UtcNow,
+                        Source = source
+                    };
+
+                    _dbContext.ModelLinkHistories.Add(history);
+                }
+
+                model.Link = newLink;
+                model.LinkState = 1;
+
+                await _dbContext.SaveChangesAsync();
+
+                _logger.Info(
+                    "Обновлена ссылка модели {Id}: {OldLink} → {NewLink}, LinkState=1",
+                    id, oldLink, newLink);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Ошибка обновления ссылки модели {Id}", id);
+                throw;
+            }
+        }
+
+
+        public async Task<List<ModelLinkHistory>> GetModelLinkHistoryAsync(int modelId, int top = 50)
+        {
+            try
+            {
+                if (top <= 0)
+                    top = 50;
+
+                return await _dbContext.ModelLinkHistories
+                    .Where(h => h.ModelId == modelId)
+                    .OrderByDescending(h => h.ChangedAt)
+                    .Take(top)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Ошибка при получении history для модели {ModelId}: " + ex, modelId);
+                return new List<ModelLinkHistory>();
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////
+        #endregion
+    }
 
 }

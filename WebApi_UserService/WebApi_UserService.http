@@ -1,13 +1,267 @@
-@WebApi_UserService_HostAddress = http://localhost:5140
+### БАЗОВЫЕ ПЕРЕМЕННЫЕ
+@AuthService_Host = http://localhost:7049
+@WebApi_UserService_Host = http://localhost:7050
 
-# Получить документ по Id
-GET {{WebApi_UserService_HostAddress}}/api/document/get/123
+# сюда потом вручную вставишь access_token из ответа AuthService
+@Token = $2a$12$yMroHZ8IXSvalOeXJQLI4.4SKA0sBlCXc4ORdSy9pX1IVGwuFUVqm
+
+################################################################
+### 1. ПОЛУЧИТЬ JWT-ТОКЕН У AUTHSERVICE (client_credentials)
+################################################################
+
+POST {{AuthService_Host}}/api/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&
+client_id=user-service&
+client_secret=SuperStrongSecretForUserService123!&
+scope=user.read user.write
+
+###
+
+################################################################
+### 2. ТЕСТ ХВОСТОВ USERCONTROLLER
+################################################################
+
+### 2.1. Получить CRM пользователя по Id
+GET {{WebApi_UserService_Host}}/api/user/getuser/1
+Authorization: Bearer {{Token}}
 Accept: application/json
 
 ###
 
-# Получить PDF-текст документа по Id
-GET {{WebApi_UserService_HostAddress}}/api/documentpdftext/get/123
+### 2.2. Получить пользователя по Id
+GET {{WebApi_UserService_Host}}/api/user/8
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 2.3. Получить пользователя по TelegramId
+GET {{WebApi_UserService_Host}}/api/user/getuserbyTg/427965141
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 2.4. CreateOrGetUser
+POST {{WebApi_UserService_Host}}/api/user/create-or-get
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "telegramId": 123456789,
+  "referralUserId": null
+}
+
+###
+
+### 2.5. Сохранить нового пользователя (SaveUser)
+POST {{WebApi_UserService_Host}}/api/user/save
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "login": "tg_user",
+  "password": "tg_user",
+  "crmId": 1,
+  "crmLogin": "tg_user",
+  "crmPassword": "tg_user",
+  "proxy": "",
+  "syncFreq": "10",
+  "syncSwitch": "ON",
+  "prefersCrm": "0",
+  "prefersWhatsapp": "0",
+  "prefersTelegram": "1",
+  "telegramId": 123456789,
+  "diagramProbability": 50,
+  "manualProbability": 25
+  // добавь остальные нужные поля модели User, если они обязательные в БД
+}
+
+###
+
+### 2.6. Сохранить дефолтного пользователя (SaveDefaultUser)
+POST {{WebApi_UserService_Host}}/api/user/saveDefaultUser
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "telegramId": 427965141,
+  "prefersTelegram": "1"
+}
+
+###
+
+### 2.7. Обновить пользователя (UpdateUser)
+PUT {{WebApi_UserService_Host}}/api/user/update
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": 8,
+  "login": "test",
+  "password": "test",
+  "crmId": 2,
+  "crmLogin": "test",
+  "crmPassword": "test",
+  "proxy": "",
+  "syncFreq": "10",
+  "syncSwitch": "ON",
+  "prefersCrm": "0",
+  "prefersWhatsapp": "0",
+  "prefersTelegram": "1",
+  "telegramId": 427965141,
+  "diagramProbability": 100,
+  "manualProbability": 100
+}
+
+###
+
+### 2.8. Отметить просмотренный видео-тип (UpdateLastVideoTip)
+POST {{WebApi_UserService_Host}}/api/user/8/tips/video-seen
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "tipId": 1
+}
+
+###
+
+### 2.9. Отметить просмотренную ссылку-тип (UpdateLastLinkTip)
+POST {{WebApi_UserService_Host}}/api/user/8/tips/link-seen
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "tipId": 1
+}
+
+###
+
+### 2.10. Отметить просмотренное ремонтное видео (UpdateLastRepairVideo)
+POST {{WebApi_UserService_Host}}/api/user/8/onboarding/repair-video
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "videoId": 1
+}
+
+###
+
+### 2.11. Отметить просмотренное складское видео (UpdateLastWarehouseVideo)
+POST {{WebApi_UserService_Host}}/api/user/8/onboarding/warehouse-video
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "videoId": 1
+}
+
+###
+
+### 2.12. Сменить режим пользователя (UpdateMode)
+POST {{WebApi_UserService_Host}}/api/user/8/mode
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "mode": 1
+}
+
+###
+
+### 2.13. Продлить Pro-подписку (ExtendPro)
+POST {{WebApi_UserService_Host}}/api/user/8/plan/extend-pro
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "months": 1
+}
+
+###
+################################################################
+### 3. ТЕСТ ХВОСТОВ USERSTOCKSCONTROLLER
+################################################################
+
+### 3.1. Получить UserStock по Id
+GET {{WebApi_UserService_Host}}/api/userstocks/getUserStock/8
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 3.2. Получить StockCred по Id
+GET {{WebApi_UserService_Host}}/api/userstocks/getStockById/8
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 3.3. Получить UserStocks по StockCred и UserId
+GET {{WebApi_UserService_Host}}/api/userstocks/getUserStocksByStock/1/8
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 3.4. Получить остатки пользователя по детали (by-part, c userId)
+GET {{WebApi_UserService_Host}}/api/userstocks/by-part/1?userId=8
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 3.5. Получить все остатки по детали (by-part/all, без userId)
+GET {{WebApi_UserService_Host}}/api/userstocks/by-part/1/all
+Authorization: Bearer {{Token}}
+Accept: application/json
+
+###
+
+### 3.6. Получить остатки по списку деталей (by-parts)
+POST {{WebApi_UserService_Host}}/api/userstocks/by-parts?userId=8
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+[ 1, 2, 3 ]
+
+###
+
+### 3.7. Вставить UserStock (insert)
+POST {{WebApi_UserService_Host}}/api/userstocks/insert
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "partNumber": "TEST-123",
+  "partsAndReplacesId": 1,
+  "stockId": 1,
+  "userId": 8,
+  "quantity": 10
+  // добавь остальные поля UserStock, если в БД есть not null
+}
+
+###
+
+### 3.8. Удалить UserStocks по Id - с удалением надо осторожно!!!
+DELETE {{WebApi_UserService_Host}}/api/userstocks/delete/1
+Authorization: Bearer {{Token}}
 Accept: application/json
 
 ###

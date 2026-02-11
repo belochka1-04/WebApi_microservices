@@ -30,3 +30,18 @@ CREATE TABLE [dbo].[ApiClients]
 
 -- Уникальный индекс по ClientId
 CREATE UNIQUE INDEX IX_ApiClients_ClientId ON [dbo].[ApiClients]([ClientId]);
+
+INSERT INTO ApiClients (
+    ClientId,
+    ClientSecretHash,
+    Name,
+    AllowedScopes,
+    IsActive
+)
+VALUES (
+    'user-service',                                  -- client_id
+    '$2a$12$yMroHZ8IXSvalOeXJQLI4.4SKA0sBlCXc4ORdSy9pX1IVGwuFUVqm',                          -- BCrypt-хеш
+    N'UserService microservice',
+    'user.read user.write',                          -- какие scope разрешены
+    1
+);

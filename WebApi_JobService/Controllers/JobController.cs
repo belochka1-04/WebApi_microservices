@@ -1,5 +1,6 @@
 using KameraData.Data.Dtos;
 using KameraData.Data.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_JobService.Services;
 
@@ -7,6 +8,7 @@ namespace WebApi_JobService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class JobController : BaseControllerClass
     {
         

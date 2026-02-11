@@ -28,6 +28,13 @@ namespace WebApi_ModelCatalogService.Services
         /// </summary>
         Task UpdateModelLinkStateAsync(int id, int linkState);
 
+        Task<ModelTb?> GetModelBySiteAndKeyAsync(int siteId, int brandModelId, string cleanedModel,
+                                         bool includeBrandModel = false, bool includeSite = false);
+        Task<int> InsertModelAsync(ModelTb model);
+        Task UpdateModelLinkAsync(int id, string newLink, string source);
+        Task InsertModelLinkHistoryAsync(ModelLinkHistory history);
+
+        Task<List<ModelLinkHistory>> GetModelLinkHistoryAsync(int modelId, int top = 50);
         #endregion
 
         #region Brands
@@ -39,6 +46,10 @@ namespace WebApi_ModelCatalogService.Services
         Task<Brand?> GetBrandByTitleAsync(string title);
         Task<List<BrandWithCountDto>> GetPopularBrandsAsync(int top = 10);
         Task<int> GetBrandModelsCountAsync(int brandId);
+        #endregion
+
+        #region BrandModel
+        Task<BrandModel?> GetOrCreateBrandModelAsync(string? brandTitle, int siteId);
 
         #endregion
 

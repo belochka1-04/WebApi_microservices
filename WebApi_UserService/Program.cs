@@ -100,7 +100,7 @@ var app = builder.Build();
 // ================================
 
 // Swagger UI
-if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+//if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>

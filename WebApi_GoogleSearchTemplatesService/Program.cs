@@ -6,7 +6,7 @@ using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
-using WebApi_ModelCatalogService.Services;
+using WebApi_GoogleSearchTemplatesService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +41,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Model Catalog Service API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Google Search Templates Service API v1");
     c.RoutePrefix = string.Empty;
 });
 

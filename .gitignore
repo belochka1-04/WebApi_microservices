@@ -369,3 +369,7 @@ FodyWeavers.xsd
 /WebApi_OnboardingVideoService/appsettings.json
 /WebApi_OnboardingVideoService/appsettings.Development.json
 /WebApi_ModelService/appsettings.json
+*.json
+/WebApi_JobService/appsettings.json
+/WebApi_ModelCatalogService/appsettings.json
+/client_secret SuperStrongSecretForU.txt

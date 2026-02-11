@@ -1,4 +1,5 @@
 using KameraData.Data.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_ModelCatalogService.Services;
 
@@ -6,6 +7,7 @@ namespace WebApi_ModelCatalogService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class SiteController : BaseControllerClass
     {
 

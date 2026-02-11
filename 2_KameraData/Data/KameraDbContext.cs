@@ -111,6 +111,13 @@ public partial class KameraDbContext : DbContext
 
     public virtual DbSet<ApiClient> ApiClients { get; set; }
 
+    public virtual DbSet<ModelLinkHistory> ModelLinkHistories { get; set; }
+    
+
+    public virtual DbSet<GoogleSerpRaw> GoogleSerpRaws { get; set; }
+
+    public virtual DbSet<SiteTemplate> SiteTemplates { get; set; }
+    public virtual DbSet<GoogleModelRequest> GoogleModelRequests { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

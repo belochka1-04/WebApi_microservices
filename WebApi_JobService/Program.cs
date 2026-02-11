@@ -1,11 +1,10 @@
 using KameraData.Data;
 using KameraData.Events;
 using MassTransit;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Prometheus;
 using Serilog;
-using SharedMicroserviceLibrary;
 using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
@@ -13,8 +12,6 @@ using SharedMicroserviceLibrary.Middleware;
 using WebApi_JobService;
 using WebApi_JobService.Consumer.JobsService.Consumers;
 using WebApi_JobService.Services;
-using Microsoft.Extensions.Hosting.WindowsServices;
-using Prometheus;
 
 var options = new WebApplicationOptions
 {
@@ -23,70 +20,90 @@ var options = new WebApplicationOptions
         ? AppContext.BaseDirectory
         : default
 };
+
 var builder = WebApplication.CreateBuilder(options);
 
-string connectionString = builder.Configuration.GetConnectionString("KameraDb");
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
-}
+// ===== 1. DB =====
+var connectionString = builder.Configuration.GetConnectionString("KameraDb")
+    ?? throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
 
-// Регистрация DbContext с конкретной строкой подключения
-builder.Services.AddDbContext<KameraDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<KameraDbContext>(opt =>
+    opt.UseSqlServer(connectionString));
 
-// Регистрация сервисов приложения, с внедрением конкретного DbContext
+// ===== 2. Application services =====
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
-builder.Services.UseHttpClientMetrics(); // необязательно, но полезно
-// Регистрация кросс-сервиса: контроллеры, swagger, json
-builder.Services.AddCustomServices(builder.Configuration, "Application Microservice API", "v1");
 
-// JWT аутентификация, если нужно
-builder.Services.AddSharedAuthentication(builder.Configuration);
-// Регистрация клиента UserServiceClient с базовым адресом
+builder.Services.UseHttpClientMetrics();
+
+// Controllers + Swagger + JSON
+builder.Services.AddCustomServices(
+    builder.Configuration,
+    apiTitle: "Job Service API",
+    apiVersion: "v1",
+    addJwtToSwagger: true);
+
+// JWT аутентификация (принимаем токены AuthService)
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// HttpClient для UserService (при необходимости)
 builder.Services.AddHttpClient<UserServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("http://your-userservice-host/"); // надо указать реальный URL UserService
+    client.BaseAddress = new Uri("http://your-userservice-host/"); // TODO: реальный URL UserService
 });
-//новое добавляем RabbitMQ для обработки user
 
+// ===== 3. MassTransit / RabbitMQ =====
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<JobLinkedConsumer>();
-   
+
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("rabbitmq", "/", h =>
-        {
-            h.Username("guest");
-            h.Password("guest");
-        });
+        var rabbitSection = builder.Configuration.GetSection("RabbitMq");
+
+        cfg.Host(
+            rabbitSection.GetValue<string>("Host") ?? "rabbitmq",
+            rabbitSection.GetValue<string>("VirtualHost") ?? "/",
+            h =>
+            {
+                h.Username(rabbitSection.GetValue<string>("Username") ?? "guest");
+                h.Password(rabbitSection.GetValue<string>("Password") ?? "guest");
+            });
 
         cfg.ConfigureEndpoints(context);
     });
 });
-// Логирование Serilog
-builder.Host.UseCustomSerilog();
 
+// ===== 4. Logging + Windows service =====
+builder.Host.UseCustomSerilog();
 builder.Host.UseWindowsService();
+
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// ===== 5. Middleware pipeline =====
+
+// Swagger
+//if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Job Service API v1");
+        c.RoutePrefix = string.Empty;
+    });
+}
 
 app.UseHttpsRedirection();
+
+app.UseHealthCheck();
+app.UseRequestLogging();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHealthCheck();
-app.UseRequestLogging();
-// Метрики HTTP-запросов
 app.UseHttpMetrics();
+app.MapMetrics("/metrics");
 
-// endpoint для метрик
-app.MapMetrics("/metrics"); // здесь Prometheus будет их снимать
 app.MapControllers();
 
 app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);

@@ -162,6 +162,41 @@ namespace WebApi_JobService.Services
                 _logger.Error("Ошибка:" + ex);
             }
         }
+
+        public async Task MarkJobDescriptionsGoogleConfirmedAsync(string requestWord)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(requestWord))
+                    return;
+
+                var normalized = requestWord.Trim().ToUpper();
+
+                var items = await _dbContext.JobDescriptionAndNotes
+                    .Where(j => (j.GoogleConfirmed == null || j.GoogleConfirmed == 0))
+                    .ToListAsync();
+
+                foreach (var j in items)
+                {
+                    var text = ((j.JobDescription ?? string.Empty) + (j.JobNotes ?? string.Empty))
+                        .Trim()
+                        .ToUpper();
+
+                    if (text == normalized)
+                    {
+                        j.GoogleConfirmed = 1;
+                    }
+                }
+
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Ошибка при обновлении google_confirmed: " + ex);
+                throw;
+            }
+        }
+
         #endregion
 
         #region jobs

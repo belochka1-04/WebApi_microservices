@@ -69,6 +69,9 @@ namespace KameraData.Data.Configurations
             entity.Property(e => e.OriginalBrand)
                 .HasColumnName("original_brand");
 
+            entity.Property(e => e.GoogleConfirmed)
+              .HasColumnName("google_confirmed");
+
             entity.HasOne(d => d.Job)
                 .WithOne(p => p.JobDescriptionAndNote)
                 .HasForeignKey<JobDescriptionAndNote>(d => d.JobId)
