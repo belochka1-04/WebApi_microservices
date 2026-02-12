@@ -1,12 +1,14 @@
 ﻿using KameraData.Data;
 using KameraData.Data.Dtos;
 using KameraData.Data.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NLog;
 using SharedMicroserviceLibrary.Middleware;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -78,7 +80,7 @@ namespace WebApi_ModelCatalogService.Services
 			{
 				// Сортировка по Confidence (строка varchar(2))
 				return await _dbContext.Sites
-					.OrderBy(s => s.confidence)
+					.OrderBy(s => s.Confidence)
 					.ToListAsync();
 			}
 			catch (Exception ex)
@@ -97,7 +99,7 @@ namespace WebApi_ModelCatalogService.Services
 			try
 			{
 				return await _dbContext.Sites
-					.Where(s => s.confidence == confidence)
+					.Where(s => s.Confidence == confidence)
 					.OrderBy(s => s.Title)
 					.ToListAsync();
 			}
@@ -122,7 +124,7 @@ namespace WebApi_ModelCatalogService.Services
 
 				return await _dbContext.Sites
 					.Where(s => s.Title != null && s.Title.ToLower().Contains(lowerQuery))
-					.OrderBy(s => s.confidence)
+					.OrderBy(s => s.Confidence)
 					.ToListAsync();
 			}
 			catch (Exception ex)
@@ -292,35 +294,35 @@ namespace WebApi_ModelCatalogService.Services
                 // 1. Ищем BrandModel по коду и сайту
                 var existing = await _dbContext.BrandModels
                     .Include(bm => bm.Brand)
-                    .FirstOrDefaultAsync(bm => bm.Code == brandTitle && bm.SiteId == siteId);
+                    .FirstOrDefaultAsync(bm => bm.Code.Trim().ToUpper() == brandTitle.Trim().ToUpper());
 
-                if (existing != null)
+               // if (existing != null)//временно убираем
                     return existing;
 
-                // 2. Ищем или создаём Brand
-                var brand = await _dbContext.Brands
-                    .FirstOrDefaultAsync(b => b.Title == brandTitle);
+                // 2. Ищем или создаём Brand //временно убираем
+                //var brand = await _dbContext.Brands
+                //    .FirstOrDefaultAsync(b => b.Title == brandTitle);
 
-                if (brand == null)
-                {
-                    brand = new Brand { Title = brandTitle };
-                    _dbContext.Brands.Add(brand);
-                    await _dbContext.SaveChangesAsync();
-                }
+                //if (brand == null)
+                //{
+                //    brand = new Brand { Title = brandTitle };
+                //    _dbContext.Brands.Add(brand);
+                //    await _dbContext.SaveChangesAsync();
+                //}
 
-                // 3. Создаём BrandModel
-                var brandModel = new BrandModel
-                {
-                    Code = brandTitle,
-                    BrandId = brand.Id,
-                    SiteId = siteId,
-                    Cnt = 0
-                };
+                //// 3. Создаём BrandModel
+                //var brandModel = new BrandModel
+                //{
+                //    Code = brandTitle,
+                //    BrandId = brand.Id,
+                //    SiteId = siteId,
+                //    Cnt = 0
+                //};
 
-                _dbContext.BrandModels.Add(brandModel);
-                await _dbContext.SaveChangesAsync();
+                //_dbContext.BrandModels.Add(brandModel);
+                //await _dbContext.SaveChangesAsync();
 
-                return brandModel;
+                //return brandModel;
             }
             catch (Exception ex)
             {
@@ -478,12 +480,74 @@ namespace WebApi_ModelCatalogService.Services
         /// <summary>
         /// Создать новую модель.
         /// </summary>
+        //public async Task<int> InsertModelAsync(ModelTb model)
+        //{
+        //    try
+        //    {
+        //        _dbContext.ModelTbs.Add(model);
+        //        await _dbContext.SaveChangesAsync();
+
+        //        _logger.Info("Создана новая модель Id={Id}, Title={Title}", model.Id, model.Title);
+        //        return model.Id;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.Error(ex, "Ошибка при создании модели Title={Title}", model.Title);
+        //        throw;
+        //    }
+        //}
         public async Task<int> InsertModelAsync(ModelTb model)
         {
+            _logger.Info("InsertModelAsync started Title={Title}", model.Title);
             try
             {
-                _dbContext.ModelTbs.Add(model);
-                await _dbContext.SaveChangesAsync();
+                var conn = (SqlConnection)_dbContext.Database.GetDbConnection();
+                var shouldClose = conn.State != ConnectionState.Open;
+                if (shouldClose)
+                    await conn.OpenAsync();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+								EXEC [dbo].[sp_InsertModel]
+									@BrandModelId,
+									@CleanedModel,
+									@CpCounter,
+									@Description,
+									@Link,
+									@LinkState,
+									@PartCounter,
+									@SiteId,
+									@Title,
+									@Token";
+                cmd.CommandType = CommandType.Text;
+
+                cmd.Parameters.AddWithValue("@BrandModelId",
+     model.BrandModelId.HasValue ? model.BrandModelId.Value : (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@CleanedModel",
+                    (object?)model.CleanedModel ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@CpCounter",
+                    model.CpCounter.HasValue ? model.CpCounter.Value : (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Description",
+                    (object?)model.Description ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Link",
+                    (object?)model.Link ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@LinkState", model.LinkState ?? 0);
+                cmd.Parameters.AddWithValue("@PartCounter",
+                    model.PartCounter.HasValue ? model.PartCounter.Value : (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@SiteId",
+                    model.SiteId.HasValue ? model.SiteId.Value : (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Title",
+                    (object?)model.Title ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Token",
+                    (object?)model.Token ?? DBNull.Value);
+
+
+                var idObj = await cmd.ExecuteScalarAsync();
+                if (shouldClose)
+                    await conn.CloseAsync();
+
+                var id = Convert.ToInt32(idObj);
+                model.Id = id;
 
                 _logger.Info("Создана новая модель Id={Id}, Title={Title}", model.Id, model.Title);
                 return model.Id;
@@ -494,7 +558,6 @@ namespace WebApi_ModelCatalogService.Services
                 throw;
             }
         }
-
         /// <summary>
         /// Сохранить запись в истории изменения ссылок модели.
         /// </summary>

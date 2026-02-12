@@ -10,7 +10,6 @@ public partial class Brand
     [Column("Title")]
     public string Title { get; set; } = string.Empty;
 
-    [InverseProperty("Brand")]
     public virtual ICollection<BrandModel> BrandModels { get; set; } = new List<BrandModel>();
 
 }

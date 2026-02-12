@@ -163,7 +163,8 @@ namespace WebApi_ModelCatalogService.Controllers
             try
             {
                 var id = await _databaseService.InsertModelAsync(model);
-                return CreatedAtAction(nameof(GetById), new { id }, id);
+               
+                return Ok(id);
             }
             catch (Exception ex)
             {

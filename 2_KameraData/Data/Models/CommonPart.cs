@@ -22,11 +22,9 @@ namespace KameraData.Data.Models
         public int PartsAndReplacesId { get; set; }
 
         [ForeignKey("ModelId")]
-        [InverseProperty("CommonParts")]
         public virtual Model Model { get; set; } = null!;
 
         [ForeignKey("PartsAndReplacesId")]
-        [InverseProperty("CommonParts")]
         public virtual PartsAndReplace PartsAndReplaces { get; set; } = null!;
     }
 }

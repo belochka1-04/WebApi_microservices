@@ -49,17 +49,15 @@ namespace KameraData.Data.Models
         public int? LinkState { get; set; }
 
         [ForeignKey("BrandModelId")]
-        [InverseProperty("Models")]
         public virtual BrandModel? BrandModel { get; set; }
 
-        [InverseProperty("Model")]
+        // без InverseProperty
         public virtual ICollection<CommonPart> CommonParts { get; set; } = new List<CommonPart>();
 
-        [InverseProperty("Model")]
+        // без InverseProperty
         public virtual ICollection<ModelPart> ModelParts { get; set; } = new List<ModelPart>();
 
         [ForeignKey("SiteId")]
-        [InverseProperty("Models")]
         public virtual Site? Site { get; set; }
     }
 }

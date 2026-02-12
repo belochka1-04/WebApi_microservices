@@ -15,7 +15,7 @@ public class ModelDocument
     public int? DocumentId { get; set; } // Nullable, так как в таблице допускаются NULL
 
     // Навигационное свойство для связи с моделью (если необходимо)
-    public virtual NModel Model { get; set; }
+    public virtual ModelTb Model { get; set; }
 
     // Навигационное свойство для связи с документом (если необходимо)
     public virtual Document Document { get; set; }

@@ -19,7 +19,6 @@ namespace KameraData.Data.Models
         [Column("CreatedAt", TypeName = "datetime")]
         public DateTime CreatedAt { get; set; }
 
-        [InverseProperty(nameof(DocumentGenericQa.Question))]
         public virtual ICollection<DocumentGenericQa> DocumentGenericQas { get; set; } = [];
     }
 }

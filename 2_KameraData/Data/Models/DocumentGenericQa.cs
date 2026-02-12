@@ -29,15 +29,13 @@ namespace KameraData.Data.Models
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(AnalysisId))]
-        [InverseProperty(nameof(DocumentAnalysis.DocumentGenericQas))]
         public virtual DocumentAnalysis Analysis { get; set; } = null!;
 
         [ForeignKey(nameof(Qaid))]
-        [InverseProperty(nameof(DocumentQa.DocumentGenericQas))]
-        public virtual DocumentQa Qa { get; set; } = null!;
+         public virtual DocumentQa Qa { get; set; } = null!;
 
         [ForeignKey(nameof(QuestionId))]
-        [InverseProperty(nameof(GenericQuestion.DocumentGenericQas))]
         public virtual GenericQuestion Question { get; set; } = null!;
+
     }
 }

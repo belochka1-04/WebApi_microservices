@@ -1,7 +1,7 @@
-﻿using System;
+﻿// Site.cs
+using KameraData.Data.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace KameraData.Data.Models;
 [Table("Site")]
 public partial class Site
 {
@@ -9,10 +9,18 @@ public partial class Site
 
     [Column("Title")]
     public string Title { get; set; } = string.Empty;
-    [Column("Confidence")]
-    public string? confidence { get; set; }
-    public string? DataTypes { get; set; } = string.Empty;
-    public string? FolderPath { get; set; } = string.Empty;
-    public string? Link_template { get; set; }
 
+    [Column("Confidence")]
+    public string? Confidence { get; set; }
+
+    [Column("data_types")]
+    public string? DataTypes { get; set; }
+
+    [Column("folder_path")]
+    public string? FolderPath { get; set; }
+
+    [Column("Link_template")]
+    public string? LinkTemplate { get; set; }
+
+    public virtual ICollection<BrandModel> BrandModels { get; set; } = new List<BrandModel>();
 }

@@ -49,7 +49,6 @@ public partial class KameraDbContext : DbContext
     /// <summary>
     /// //////////////////////////new struct//////////////////////////////
     /// </summary>
-    public virtual DbSet<NModel> NModels { get; set; }
     public virtual DbSet<Brand> Brands { get; set; }
     public virtual DbSet<BrandModel> BrandModels { get; set; }
     public virtual DbSet<Site> Sites { get; set; }
