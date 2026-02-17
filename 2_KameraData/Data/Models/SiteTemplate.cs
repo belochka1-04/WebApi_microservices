@@ -55,5 +55,7 @@ namespace KameraData.Data.Models
         [MaxLength(500)]
         [Column("composite_brands")]
         public string? CompositeBrands { get; set; }
+
+        public ICollection<SiteTemplateTitleRule> TitleRules { get; set; } = new List<SiteTemplateTitleRule>();
     }
 }

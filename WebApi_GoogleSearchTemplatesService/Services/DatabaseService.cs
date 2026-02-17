@@ -100,7 +100,21 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 			}
 		}
 
-		public async Task<List<SiteTemplate>> GetAllSiteTemplatesAsync()
+        public Task<List<SiteTemplate>> GetActiveSiteTemplatesWithTitleRulesAsync()
+       => _dbContext.SiteTemplates
+           .AsNoTracking()
+           .Where(t => t.IsActive)
+           .Include(t => t.TitleRules.Where(r => r.IsActive))
+           .ToListAsync();
+
+        public Task<List<SiteTemplateTitleRule>> GetActiveTitleRulesAsync(int siteTemplateId)
+            => _dbContext.Set<SiteTemplateTitleRule>()
+                .AsNoTracking()
+                .Where(r => r.SiteTemplateId == siteTemplateId && r.IsActive)
+                .OrderBy(r => r.Priority)
+                .ToListAsync();
+
+        public async Task<List<SiteTemplate>> GetAllSiteTemplatesAsync()
 		{
 			try
 			{

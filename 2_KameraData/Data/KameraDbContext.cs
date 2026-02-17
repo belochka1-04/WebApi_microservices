@@ -118,6 +118,8 @@ public partial class KameraDbContext : DbContext
     public virtual DbSet<SiteTemplate> SiteTemplates { get; set; }
     public virtual DbSet<GoogleModelRequest> GoogleModelRequests { get; set; }
 
+    public virtual DbSet<SiteTemplateTitleRule> SiteTemplateTitleRules { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

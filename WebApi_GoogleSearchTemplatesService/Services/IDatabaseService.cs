@@ -35,10 +35,14 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 		/// </summary>
 		Task<List<SiteTemplate>> GetAllSiteTemplatesAsync();
 
-		/// <summary>
-		/// Получить шаблон сайта по Id.
-		/// </summary>
-		Task<SiteTemplate?> GetSiteTemplateByIdAsync(int id);
+        Task<List<SiteTemplate>> GetActiveSiteTemplatesWithTitleRulesAsync();
+
+        Task<List<SiteTemplateTitleRule>> GetActiveTitleRulesAsync(int siteTemplateId);
+
+        /// <summary>
+        /// Получить шаблон сайта по Id.
+        /// </summary>
+        Task<SiteTemplate?> GetSiteTemplateByIdAsync(int id);
 
 		/// <summary>
 		/// Создать новый шаблон сайта.

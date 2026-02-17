@@ -36,6 +36,31 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
         }
 
         /// <summary>
+        /// јктивные шаблоны + активные title rules (отсортированы по Priority).
+        /// GET /api/SiteTemplates/active-with-title-rules
+        /// </summary>
+        [HttpGet("active-with-title-rules")]
+        [ProducesResponseType(typeof(List<SiteTemplate>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<SiteTemplate>>> GetActiveWithTitleRules()
+        {
+            var templates = await _databaseService.GetActiveSiteTemplatesWithTitleRulesAsync();
+            return Ok(templates);
+        }
+
+        /// <summary>
+        /// ѕолучить активные title rules дл€ конкретного шаблона.
+        /// GET /api/SiteTemplates/{id}/title-rules
+        /// </summary>
+        [HttpGet("{id:int}/title-rules")]
+        [ProducesResponseType(typeof(List<SiteTemplateTitleRule>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<SiteTemplateTitleRule>>> GetTitleRules(int id)
+        {
+            var rules = await _databaseService.GetActiveTitleRulesAsync(id);
+            return Ok(rules);
+        }
+    
+
+        /// <summary>
         /// ѕолучить все шаблоны сайтов.
         /// GET /api/SiteTemplates
         /// </summary>
