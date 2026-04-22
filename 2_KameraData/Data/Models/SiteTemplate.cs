@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KameraData.Data.Models
 {
-    [Table("site_templates")] // точное имя таблицы в БД
+    [Table("site_templates")]
     public class SiteTemplate
     {
         [Key]
         [Column("id")]
         public int Id { get; set; }
 
+        [Required]
         [Column("site_id")]
         public int SiteId { get; set; }
 
@@ -32,9 +34,11 @@ namespace KameraData.Data.Models
         [Column("normalization_rules")]
         public string? NormalizationRules { get; set; }
 
+        [Required]
         [Column("is_active")]
         public bool IsActive { get; set; }
 
+        [Required]
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 

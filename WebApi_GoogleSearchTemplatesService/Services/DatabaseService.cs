@@ -100,12 +100,23 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 			}
 		}
 
-        public Task<List<SiteTemplate>> GetActiveSiteTemplatesWithTitleRulesAsync()
-       => _dbContext.SiteTemplates
-           .AsNoTracking()
-           .Where(t => t.IsActive)
-           .Include(t => t.TitleRules.Where(r => r.IsActive))
-           .ToListAsync();
+        public async Task<List<SiteTemplate>> GetActiveSiteTemplatesWithTitleRulesAsync()
+        {
+            try
+            {
+                return await _dbContext.SiteTemplates
+                    .AsNoTracking()
+                    .Where(t => t.IsActive)
+                    .Include(t => t.TitleRules.Where(r => r.IsActive))
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error fetching active site templates with title rules");
+                throw;
+            }
+        }
+
 
         public Task<List<SiteTemplateTitleRule>> GetActiveTitleRulesAsync(int siteTemplateId)
             => _dbContext.Set<SiteTemplateTitleRule>()

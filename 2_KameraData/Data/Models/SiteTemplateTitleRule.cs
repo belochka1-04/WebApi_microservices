@@ -24,9 +24,6 @@ namespace KameraData.Data.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 
-        [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
-
         // navigation (в БД колонки нет — Column не нужен)
         public SiteTemplate? SiteTemplate { get; set; }
     }

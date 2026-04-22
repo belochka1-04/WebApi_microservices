@@ -182,6 +182,7 @@ namespace WebApi_JobService.Services
                         .Trim()
                         .ToUpper();
 
+                    _logger.Info(" текст из джоб дескрипшен энд нотес: " + text + "- текст для апдейта из запроса: " + requestWord);
                     if (text == normalized)
                     {
                         j.GoogleConfirmed = 1;

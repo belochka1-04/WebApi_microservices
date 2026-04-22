@@ -42,7 +42,7 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
         [HttpGet("active-with-title-rules")]
         [ProducesResponseType(typeof(List<SiteTemplate>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<SiteTemplate>>> GetActiveWithTitleRules()
-        {
+      {
             var templates = await _databaseService.GetActiveSiteTemplatesWithTitleRulesAsync();
             return Ok(templates);
         }

@@ -31,8 +31,7 @@ namespace WebApi_GoogleSearchTemplatesService.Data.Configurations
                 .HasDefaultValueSql("getdate()")
                 .IsRequired();
 
-            builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-
+           
             builder.HasOne(x => x.SiteTemplate)
                 .WithMany(t => t.TitleRules)
                 .HasForeignKey(x => x.SiteTemplateId)
