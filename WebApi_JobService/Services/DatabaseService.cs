@@ -1,468 +1,500 @@
-﻿using KameraData.Data;
-using KameraData.Data.Dtos;
-using KameraData.Data.Models;
-using KameraData.Events;
+﻿using JobService.Domain.Entities;
+using JobService.Infrastructure.Persistence;
+using Mapster;
 using MassTransit;
-using MassTransit.Extensions.Hosting;
-using MassTransit.Transports;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using SharedMicroserviceLibrary.Middleware;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Threading.Tasks;
-using WebApi_JobService.Services;
+using WebApi_JobService.Application.Dtos;
+using WebApi_JobService.Application.Events;
+using EFModels = WebApi_JobService.Infrastructure.Persistence.Entities;
+using Domain = JobService.Domain.Entities;
 
-namespace WebApi_JobService.Services
+namespace WebApi_JobService.Services;
+
+public class DatabaseService : IDatabaseService, IDatabaseHealthCheck
 {
-    public class DatabaseService : IDatabaseService, IDatabaseHealthCheck
+    private readonly IDbContextFactory<JobServiceDbContext> _dbFactory;
+    private readonly NLog.ILogger _logger;
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public DatabaseService(
+        IDbContextFactory<JobServiceDbContext> dbFactory,
+        IPublishEndpoint publishEndpoint,
+        ILogger<DatabaseService> logger)
     {
-        private readonly KameraDbContext _dbContext;
-        private readonly NLog.ILogger _logger;
-        private readonly UserServiceClient _userServiceClient;
-        private readonly IPublishEndpoint _publishEndpoint;  // ← ПОЛЕ (не локальная переменная)
+        _dbFactory = dbFactory;
+        _publishEndpoint = publishEndpoint;
+        _logger = LogManager.GetCurrentClassLogger();
+    }
 
-
-        public DatabaseService(KameraDbContext dbContext, IPublishEndpoint publishEndpoint, ILogger<DatabaseService> logger)// ← DI автоматически                                                                               
+    public async Task<bool> IsDatabaseHealthyAsync()
+    {
+        try
         {
-            _dbContext = dbContext;
-            //_userServiceClient = userServiceClient;
-            _publishEndpoint = publishEndpoint;  // ← ПРИСВАИВАЕМ ПОЛЕ
-            _logger = LogManager.GetCurrentClassLogger();
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var canConnect = await db.Database.CanConnectAsync();
+            if (!canConnect) return false;
+
+            var count = await db.JobDescriptionAndNotes
+                .FromSqlRaw("SELECT COUNT(*) FROM JobDescriptionAndNotes WITH (NOLOCK)")
+                .AsNoTracking()
+                .CountAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "База данных недоступна");
+            return false;
+        }
+    }
+
+    #region job_description_and_notes
+
+    public async Task<IEnumerable<JobDescriptionAndNote>> GetJobsAsync()
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efList = await db.JobDescriptionAndNotes
+                .Where(j => j.Status == "0")
+                .AsNoTracking()
+                .ToListAsync();
+
+            return efList.Adapt<List<JobDescriptionAndNote>>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при получении заданий");
+            return Array.Empty<JobDescriptionAndNote>();
+        }
+    }
+
+    public async Task<IEnumerable<JobDescriptionAndNote>> GetJandD(int jobID)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efList = await db.JobDescriptionAndNotes
+                .Where(j => j.JobId == jobID)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return efList.Adapt<List<JobDescriptionAndNote>>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка получения JobDescriptionAndNote JobId={JobId}", jobID);
+            return Array.Empty<JobDescriptionAndNote>();
+        }
+    }
+
+    public async Task UpdateDescriptionAndNotesStatusAsync(int jobId, int status)
+    {
+        if (jobId <= 0)
+        {
+            _logger.Warn($"Некорректный JobId={jobId}");
+            return;
         }
 
-        public async Task<bool> IsDatabaseHealthyAsync()
+        try
         {
-            try
-            {
-                return await _dbContext.Database.CanConnectAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Ошибка проверки подключения к базе данных");
-                return false;
-            }
-        }
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var strategy = db.Database.CreateExecutionStrategy();
 
-        #region job_description_and_notes
-        public async Task<IEnumerable<JobDescriptionAndNote>> GetJobsAsync()
-        {
-            try
+            await strategy.ExecuteAsync(async () =>
             {
-                return await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.Status == "0")
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Ошибка при получении заданий: " + ex);
-                return new List<JobDescriptionAndNote>();
-            }
-        }
-
-        public async Task<IEnumerable<JobDescriptionAndNote>> GetJandD(int jobID)
-        {
-            try
-            {
-                return await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.JobId == jobID)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + "джоб ид:" + jobID + " - " + ex);
-                return new List<JobDescriptionAndNote>();
-            }
-        }
-
-        public async Task UpdateDescriptionAndNotesStatusAsync(int jobId, int status)
-        {
-            try
-            {
-                var jobDescriptions = await _dbContext.JobDescriptionAndNotes
+                var updatedRows = await db.JobDescriptionAndNotes
                     .Where(j => j.JobId == jobId)
-                    .ToListAsync();
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Status, status.ToString()));
 
-                foreach (var jobDescription in jobDescriptions)
-                {
-                    jobDescription.Status = status.ToString();
-                }
-
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
-            }
+                _logger.Info($"✅ Обновлено Status={status} для {updatedRows} записей JobId={jobId}");
+            });
         }
-        public async Task UpdateDescriptionAndNotesDescriptionAsync(int jobId, string fulltext)
+        catch (Exception ex)
         {
-            try
+            _logger.Error(ex, $"💥 Ошибка обновления Status JobId={jobId}");
+            throw;
+        }
+    }
+
+    public async Task UpdateDescriptionAndNotesDescriptionAsync(int jobId, string fulltext)
+    {
+        try
+        {
+            if (jobId <= 0 || string.IsNullOrWhiteSpace(fulltext))
             {
-                var jobDescriptions = await _dbContext.JobDescriptionAndNotes
+                _logger.Warn($"Некорректные параметры: JobId={jobId}, fulltext length={fulltext?.Length ?? 0}");
+                return;
+            }
+
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                var safeFulltext = fulltext.Replace('\'', ' ');
+
+                var updatedRows = await db.JobDescriptionAndNotes
                     .Where(j => j.JobId == jobId)
-                    .ToListAsync();
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.JobDescription, safeFulltext));
 
-                foreach (var jobDescription in jobDescriptions)
-                {
-                    jobDescription.JobDescription = fulltext;
-                }
-
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
-            }
+                _logger.Info($"✅ Обновлено JobDescription для {updatedRows} записей JobId={jobId}, length={safeFulltext.Length}");
+            });
         }
-
-        public async Task UpdateDescriptionAndNotesPicCountAsync(int jobId, int pic_count)
+        catch (Exception ex)
         {
-            try
+            _logger.Error(ex, $"💥 Ошибка обновления JobDescription JobId={jobId}");
+            throw;
+        }
+    }
+
+    public async Task UpdateDescriptionAndNotesPicCountAsync(int jobId, int pic_count)
+    {
+        try
+        {
+            if (jobId <= 0)
             {
-                var jobDescriptions = await _dbContext.JobDescriptionAndNotes
+                _logger.Warn($"Некорректный JobId={jobId}");
+                return;
+            }
+
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                var updatedRows = await db.JobDescriptionAndNotes
                     .Where(j => j.JobId == jobId)
-                    .ToListAsync();
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.PicRecon, pic_count));
 
-                foreach (var jobDescription in jobDescriptions)
-                {
-                    jobDescription.PicRecon = pic_count;
-                }
-
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
-            }
+                _logger.Info($"✅ Обновлено PicRecon={pic_count} для {updatedRows} записей JobId={jobId}");
+            });
         }
-        public async Task InsertDescriptionAndNotesDescriptionAsync(int jobId, string fulltext)
+        catch (Exception ex)
         {
-            try
-            {
-                var jobDescription = new JobDescriptionAndNote
-                {
-                    JobId = jobId,
-                    JobDescription = fulltext.Replace('\'', ' '),
-                    Status = "0" // или любое другое значение по умолчанию
-                };
-
-                await _dbContext.JobDescriptionAndNotes.AddAsync(jobDescription);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
-            }
+            _logger.Error(ex, $"💥 Ошибка обновления PicRecon JobId={jobId}");
+            throw;
         }
+    }
 
-        public async Task MarkJobDescriptionsGoogleConfirmedAsync(string requestWord)
+    public async Task InsertDescriptionAndNotesDescriptionAsync(int jobId, string fulltext)
+    {
+        try
         {
-            try
+            if (jobId <= 0 || string.IsNullOrWhiteSpace(fulltext))
             {
-                if (string.IsNullOrWhiteSpace(requestWord))
-                    return;
-
-                var normalized = requestWord.Trim().ToUpper();
-
-                var items = await _dbContext.JobDescriptionAndNotes
-                    .Where(j => (j.GoogleConfirmed == null || j.GoogleConfirmed == 0))
-                    .ToListAsync();
-
-                foreach (var j in items)
-                {
-                    var text = ((j.JobDescription ?? string.Empty) + (j.JobNotes ?? string.Empty))
-                        .Trim()
-                        .ToUpper();
-
-                    _logger.Info(" текст из джоб дескрипшен энд нотес: " + text + "- текст для апдейта из запроса: " + requestWord);
-                    if (text == normalized)
-                    {
-                        j.GoogleConfirmed = 1;
-                    }
-                }
-
-                await _dbContext.SaveChangesAsync();
+                _logger.Warn($"Некорректные параметры: JobId={jobId}, fulltext length={fulltext?.Length ?? 0}");
+                return;
             }
-            catch (Exception ex)
+
+            var jobDescription = new EFModels.JobDescriptionAndNote
             {
-                _logger.Error("Ошибка при обновлении google_confirmed: " + ex);
-                throw;
-            }
-        }
-
-        #endregion
-
-        #region jobs
-        public async Task<Job> GetJobByIdAsync(int jobId)
-        {
-            try
-            {
-                var job = await _dbContext.Jobs.Include(x => x.User)
-                    .Where(j => j.Id == jobId)
-                    .Select(j => new Job
-                    {
-                        Id = j.Id,
-                        UserId = j.UserId,
-                        JobNumber = j.JobNumber,
-                        JobLink = j.JobLink,
-                        Token = j.Token,
-                        UpdateRequestStatus = j.UpdateRequestStatus,
-                        User = j.User,
-                    })
-                    .FirstOrDefaultAsync();
-
-                if (job == null)
-                {
-                    throw new Exception("Job not found.");
-                }
-
-                return job;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Ошибка при получении заданий: " + ex);
-                return new Job(); // Возвращаем новый экземпляр Job в случае ошибки
-            }
-        }
-
-        public async Task<JobDto?> GetJobDtoByIdAsync(int jobId)
-        {
-            try
-            {
-                var job = await _dbContext.Jobs
-                    .Include(x => x.User)
-                    .Where(j => j.Id == jobId)
-                    .Select(j => new JobDto
-                    {
-                        Id = j.Id,
-                        UserId = j.UserId,
-                        TelegramId = j.TelegramId,
-                        JobNumber = j.JobNumber,
-                        JobLink = j.JobLink,
-                        Token = j.Token,
-                        UpdateRequestStatus = j.UpdateRequestStatus,
-                        Status = j.Status
-                    })
-                    .FirstOrDefaultAsync();
-
-                return job;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Ошибка при получении Job");
-                return null;
-            }
-        }
-        public async Task<IEnumerable<Job>> GetJobByLink(string jobLink)
-        {
-            try
-            {
-                var jobs = await _dbContext.Jobs
-                    .Where(j => j.JobLink == jobLink)
-                    .Select(j => new Job
-                    {
-                        Id = j.Id,
-                        UserId = j.UserId,
-                        JobNumber = j.JobNumber
-                    })
-                    .ToListAsync();
-
-                return jobs;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + "джоб линк:" + jobLink + " - " + ex);
-                return new List<Job>();
-            }
-        }
-
-        //public async Task<Job> AddJobByTgAsync(int Id)
-        //{
-        //    try
-        //    {
-        //       // var userId = _dbContext.Users.Where(x => x.TelegramId == Id).FirstOrDefault(); заменяем на работу с сервисом UserService
-        //        var userId = await _userServiceClient.GetUserByTelegramIdAsync(Id); // Внешний http/rpc-клиент
-
-        //        if (userId == null || userId.Id < 1)
-        //        {
-        //            throw new Exception($"Пользователь с Telegram ID {Id} не найден.");
-        //        }
-        //        // Находим максимальный JobNumber
-        //        var maxJobNumber = await _dbContext.Jobs
-        //            .MaxAsync(j => Convert.ToInt32(j.JobNumber)); // Получаем максимальный номер или 0, если нет заданий
-
-        //        // Создаем новый объект Job
-        //        var newJob = new Job
-        //        {
-        //            UserId = userId.Id,
-        //            JobNumber = (maxJobNumber + 1).ToString(), // Уникальный номер задания
-        //            JobLink = string.Empty, // Пустая строка для JobLink
-        //            UpdateRequestStatus = string.Empty // Пустая строка для UpdateRequestStatus
-        //        };
-
-        //        // Добавляем объект в контекст
-        //        await _dbContext.Jobs.AddAsync(newJob);
-
-        //        // Сохраняем изменения в базе данных
-        //        await _dbContext.SaveChangesAsync();
-
-        //        return newJob; // Возвращаем добавленный объект
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.Error("Ошибка при добавлении задания: " + ex);
-        //        throw; // Пробрасываем исключение дальше
-        //    }
-        //}
-        public async Task<Job> AddJobByTgAsync(int telegramId)
-        {
-            var maxJobNumber = await _dbContext.Jobs
-                .MaxAsync(j => Convert.ToInt32(j.JobNumber ?? "0"));  // ← Защита от null
-
-            var newJob = new Job
-            {
-                TelegramId = telegramId,
-                JobNumber = (maxJobNumber + 1).ToString(),
-                Status = "Pending"
+                JobId = jobId,
+                JobDescription = fulltext.Replace('\'', ' '),
+                Status = "0"
             };
 
-            await _dbContext.Jobs.AddAsync(newJob);
-            await _dbContext.SaveChangesAsync();
-            
-            // добавили _publishEndpoint
-            await _publishEndpoint.Publish(new JobCreatedEvent
-            {
-                JobId = newJob.Id,
-                TelegramId = telegramId
-            });
+            const int maxRetries = 3;
+            var delayMs = 50;
 
-            return newJob;
-        }
-
-        public async Task<int> GetTodaysOperationsCountAsync(int userId)
-        {
-            try
+            for (int retry = 0; retry < maxRetries; retry++)
             {
-                var today = DateTime.Today;
+                await using var db = await _dbFactory.CreateDbContextAsync();
 
-                return await _dbContext.Jobs
-                    .Where(j => j.UserId == userId && j.CreatedAt >= today)
-                    .CountAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Ошибка при подсчете операций за сегодня для пользователя {userId}", userId);
-                return 0;
-            }
-        }
-
-        public async Task<Job> CreateJobFromTextAsync(int userId, string? content, string? brand)
-        {
-            try
-            {
-                var job = new Job
+                try
                 {
-                    UserId = userId,
-                    JobNumber = null,
-                    JobLink = null,
-                    Token = null,
-                    UpdateRequestStatus = null,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    await db.JobDescriptionAndNotes.AddAsync(jobDescription);
+                    await db.SaveChangesAsync();
 
-                await _dbContext.Jobs.AddAsync(job);
-
-                var note = new JobDescriptionAndNote
+                    _logger.Info($"✅ Добавлена JobDescriptionAndNote для JobId={jobId}, ID={jobDescription.Id}");
+                    return;
+                }
+                catch (DbUpdateException ex) when (IsDeadlock(ex) && retry < maxRetries - 1)
                 {
-                    Job = job,
-                    JobId = job.Id,        // EF сам подставит после SaveChanges, но можно оставить явно
-                    JobDescription = content,
-                    OriginalBrand = brand,
-                    Status = "0"
-                };
-
-                await _dbContext.JobDescriptionAndNotes.AddAsync(note);
-                await _dbContext.SaveChangesAsync();
-
-                return job;
+                    db.Entry(jobDescription).State = EntityState.Detached;
+                    _logger.Warn($"⚠️ Deadlock INSERT #{retry + 1}/{maxRetries} для JobId={jobId}. Retry через {delayMs}ms");
+                    await Task.Delay(delayMs);
+                    delayMs *= 2;
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Ошибка при создании задания из текста для пользователя {userId}", userId);
-                throw;
-            }
+
+            _logger.Error($"❌ INSERT failed после {maxRetries} попыток для JobId={jobId}");
+            throw new InvalidOperationException($"Не удалось вставить JobDescriptionAndNote для JobId={jobId}");
         }
-
-        public async Task<Job> CreateJobFromImageAsync(CreateJobFromImageDto dto)
+        catch (Exception ex)
         {
-            try
-            {
-                var job = new Job
-                {
-                    UserId = dto.UserId,
-                    JobNumber = null,
-                    JobLink = null,
-                    Token = null,
-                    UpdateRequestStatus = null,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _dbContext.Jobs.AddAsync(job);
-
-                var note = new JobDescriptionAndNote
-                {
-                    Job = job,
-                    JobId = job.Id,
-                    OriginalBrand = dto.Brand,
-                    Model = dto.ModelNumber,
-                    JobDescription = dto.ModelNumber,
-                    StickerLink = dto.ImageUrl,
-                    SerialNumber = dto.SerialNumber,
-                    Status = "0"
-                };
-
-                await _dbContext.JobDescriptionAndNotes.AddAsync(note);
-
-                // если позже решишь хранить распознавания, тут можно добавлять связанные сущности
-
-                await _dbContext.SaveChangesAsync();
-
-                return job;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Ошибка при создании задания из изображения для пользователя {userId}", dto.UserId);
-                throw;
-            }
+            _logger.Error(ex, $"💥 Критическая ошибка INSERT JobDescriptionAndNote JobId={jobId}");
+            throw;
         }
-
-        public async Task<Job?> GetFullJobByIdAsync(int jobId)
-        {
-            try
-            {
-                return await _dbContext.Jobs
-                    .Include(j => j.JobDescriptionAndNote)
-                    .Include(j => j.JobDocs)
-                    .FirstOrDefaultAsync(j => j.Id == jobId);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Ошибка при получении полного Job {jobId}", jobId);
-                return null;
-            }
-        }
-
-
-        #endregion
-
     }
+
+    public async Task MarkJobDescriptionsGoogleConfirmedAsync(string requestWord)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(requestWord)) return;
+            var normalized = requestWord.Trim().ToUpper();
+
+            const int maxRetries = 3;
+            for (int retry = 0; retry < maxRetries; retry++)
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync();
+
+                try
+                {
+                    var sql = @"UPDATE [job_description_and_notes] WITH (ROWLOCK, UPDLOCK)
+                            SET [google_confirmed] = 1
+                            WHERE ([google_confirmed] IS NULL OR [google_confirmed] = 0)
+                            AND UPPER(LTRIM(RTRIM(ISNULL([job_description],'') + ISNULL([job_notes], '')))) = @p0";
+
+                    var updatedRows = await db.Database.ExecuteSqlRawAsync(sql, normalized);
+
+                    _logger.Info($"✅ Raw SQL: обновлено {updatedRows} записей GoogleConfirmed для '{requestWord}'");
+                    return;
+                }
+                catch (SqlException ex) when (IsTransientError(ex) && retry < maxRetries - 1)
+                {
+                    _logger.Warn($"⚠️ SQL Error #{retry + 1}: {ex.Number} - {ex.Message}");
+                    await Task.Delay(100 * (retry + 1));
+                }
+            }
+
+            throw new InvalidOperationException($"Failed after 3 retries for '{requestWord}'");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, $"💥 MarkJobDescriptionsGoogleConfirmedAsync failed: {requestWord}");
+            throw;
+        }
+    }
+
+    private static bool IsTransientError(SqlException ex) =>
+        ex.Number is 1205 or 1222 or 49918 or 49919;
+
+    private static bool IsDeadlock(DbUpdateException ex) =>
+        ex.InnerException is SqlException sqlEx &&
+        (sqlEx.Number == 1205 || sqlEx.Number == 1222);
+
+    #endregion
+
+    #region jobs
+
+    public async Task<Job> GetJobByIdAsync(int jobId)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efJob = await db.Jobs
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            if (efJob == null)
+                throw new Exception("Job not found.");
+
+            return efJob.Adapt<Job>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при получении Job {jobId}", jobId);
+            return new Job();
+        }
+    }
+
+    public async Task<JobDto?> GetJobDtoByIdAsync(int jobId)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efJob = await db.Jobs
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            return efJob?.Adapt<JobDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при получении Job");
+            return null;
+        }
+    }
+
+    public async Task<IEnumerable<Job>> GetJobByLink(string jobLink)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var jobs = await db.Jobs
+                .Where(j => j.JobLink == jobLink)
+                .Select(j => new Job
+                {
+                    Id = j.Id,
+                    UserId = j.UserId,
+                    JobNumber = j.JobNumber
+                })
+                .ToListAsync();
+
+            return jobs;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка: джоб линк:{jobLink} - {ex}", jobLink, ex);
+            return new List<Job>();
+        }
+    }
+
+    public async Task<Job> AddJobByTgAsync(int telegramId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+
+        var maxJobNumber = await db.Jobs
+            .MaxAsync(j => Convert.ToInt32(j.JobNumber ?? "0"));
+
+        var efJob = new EFModels.Job
+        {
+            JobNumber = (maxJobNumber + 1).ToString()
+        };
+
+        await db.Jobs.AddAsync(efJob);
+        await db.SaveChangesAsync();
+
+        await _publishEndpoint.Publish(new JobCreatedEvent
+        {
+            JobId = efJob.Id,
+            TelegramId = telegramId
+        });
+
+        return efJob.Adapt<Job>();
+    }
+
+    public async Task<int> GetTodaysOperationsCountAsync(int userId)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var today = DateTime.Today;
+
+            return await db.Jobs
+                .Where(j => j.UserId == userId && j.CreatedAt >= today)
+                .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при подсчете операций за сегодня для пользователя {userId}", userId);
+            return 0;
+        }
+    }
+
+    public async Task<Domain.Job> CreateJobFromTextAsync(int userId, string? content, string? brand)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efJob = new EFModels.Job
+            {
+                UserId = userId,
+                JobNumber = null,
+                JobLink = null,
+                Token = null,
+                UpdateRequestStatus = null,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await db.Jobs.AddAsync(efJob);
+
+            var efNote = new EFModels.JobDescriptionAndNote
+            {
+                Job = efJob,
+                JobId = efJob.Id,
+                JobDescription = content,
+                OriginalBrand = brand,
+                Status = "0"
+            };
+
+            await db.JobDescriptionAndNotes.AddAsync(efNote);
+            await db.SaveChangesAsync();
+
+            return efJob.Adapt<Domain.Job>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при создании задания из текста для пользователя {userId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<Domain.Job> CreateJobFromImageAsync(CreateJobFromImageDto dto)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efJob = new EFModels.Job
+            {
+                UserId = dto.UserId,
+                JobNumber = null,
+                JobLink = null,
+                Token = null,
+                UpdateRequestStatus = null,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await db.Jobs.AddAsync(efJob);
+
+            var efNote = new EFModels.JobDescriptionAndNote
+            {
+                Job = efJob,
+                JobId = efJob.Id,
+                OriginalBrand = dto.Brand,
+                Model = dto.ModelNumber,
+                JobDescription = dto.ModelNumber,
+                StickerLink = dto.ImageUrl,
+                SerialNumber = dto.SerialNumber,
+                Status = "0"
+            };
+
+            await db.JobDescriptionAndNotes.AddAsync(efNote);
+            await db.SaveChangesAsync();
+
+            return efJob.Adapt<Domain.Job>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при создании задания из изображения для пользователя {userId}", dto.UserId);
+            throw;
+        }
+    }
+
+    public async Task<Domain.Job?> GetFullJobByIdAsync(int jobId)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var efJob = await db.Jobs
+                .Include(j => j.JobDescriptionAndNote)
+                .Include(j => j.JobDocs)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            return efJob?.Adapt<Domain.Job>();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Ошибка при получении полного Job {jobId}", jobId);
+            return null;
+        }
+    }
+
+    #endregion
 }

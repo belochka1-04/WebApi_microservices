@@ -1,5 +1,5 @@
-using KameraData.Data;
-using KameraData.Events;
+﻿using JobService.Application.Mappings;
+using JobService.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -12,6 +12,7 @@ using SharedMicroserviceLibrary.Middleware;
 using WebApi_JobService;
 using WebApi_JobService.Consumer.JobsService.Consumers;
 using WebApi_JobService.Services;
+
 
 var options = new WebApplicationOptions
 {
@@ -27,7 +28,10 @@ var builder = WebApplication.CreateBuilder(options);
 var connectionString = builder.Configuration.GetConnectionString("KameraDb")
     ?? throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
 
-builder.Services.AddDbContext<KameraDbContext>(opt =>
+builder.Services.AddDbContext<JobServiceDbContext>(opt =>
+    opt.UseSqlServer(connectionString));
+
+builder.Services.AddDbContextFactory<JobServiceDbContext>(opt =>
     opt.UseSqlServer(connectionString));
 
 // ===== 2. Application services =====
@@ -36,6 +40,15 @@ builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();
 
 builder.Services.UseHttpClientMetrics();
 
+//  gRPC 
+builder.Services.AddGrpc(options =>
+{
+    options.EnableDetailedErrors = !builder.Environment.IsProduction();
+})
+.AddJsonTranscoding();
+
+// Для Swagger + gRPC UI
+builder.Services.AddGrpcSwagger();
 // Controllers + Swagger + JSON
 builder.Services.AddCustomServices(
     builder.Configuration,
@@ -43,13 +56,19 @@ builder.Services.AddCustomServices(
     apiVersion: "v1",
     addJwtToSwagger: true);
 
-// JWT �������������� (��������� ������ AuthService)
+// JWT аутентификация (принимаем токены AuthService)
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
-// HttpClient ��� UserService (��� �������������)
+// HttpClient для UserService (при необходимости)
 builder.Services.AddHttpClient<UserServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("http://your-userservice-host/"); // TODO: �������� URL UserService
+    var userServiceUrl = builder.Configuration["Services:UserService"]
+        ?? "http://localhost:7050/";   // fallback
+
+    client.BaseAddress = new Uri(userServiceUrl);
+
+    // Опционально: таймауты и retry-политики
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 // ===== 3. MassTransit / RabbitMQ =====
@@ -73,6 +92,8 @@ builder.Services.AddMassTransit(x =>
         cfg.ConfigureEndpoints(context);
     });
 });
+// === Mapster Configuration ===
+JobMappingConfig.Apply();
 
 // ===== 4. Logging + Windows service =====
 builder.Host.UseCustomSerilog();
@@ -80,31 +101,37 @@ builder.Host.UseWindowsService();
 
 var app = builder.Build();
 
-// ===== 5. Middleware pipeline =====
+// ===== 5. Middleware pipeline 
+app.UseRouting(); // для grpc
 
-// Swagger
-//if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+// 1️ Swagger (самый первый!)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Job Service API v1");
-        c.RoutePrefix = string.Empty;
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Job Service API v1");
+    c.RoutePrefix = string.Empty;
+});
 
-app.UseHttpsRedirection();
-
+// 2️ Health/Metrics (до Auth)
 app.UseHealthCheck();
-app.UseRequestLogging();
+app.UseHttpMetrics();
 
+// 3️ Auth (JWT ДЛЯ gRPC + REST)
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpMetrics();
-app.MapMetrics("/metrics");
+// 4️ Request logging (после Auth)
+app.UseRequestLogging();
 
+// 5️ HTTPS (последний, если нужен)
+if (!app.Environment.IsProduction())
+    app.UseHttpsRedirection();
+
+// 6️ gRPC
+app.MapGrpcService<JobServiceImpl>();
+// 7 Controllers 
 app.MapControllers();
+app.MapMetrics("/metrics");
 
 app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 

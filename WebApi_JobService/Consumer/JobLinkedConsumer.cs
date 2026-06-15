@@ -2,9 +2,7 @@
 {
     using KameraData.Data;
     using KameraData.Data.Events;
-    using KameraData.Events;
     using MassTransit;
-    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
 
     namespace JobsService.Consumers

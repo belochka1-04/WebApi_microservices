@@ -1,8 +1,8 @@
-using KameraData.Data.Dtos;
-using KameraData.Data.Models;
+using WebApi_JobService.Application.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_JobService.Services;
+using JobService.Domain.Entities;
 
 namespace WebApi_JobService.Controllers
 {
@@ -11,7 +11,7 @@ namespace WebApi_JobService.Controllers
     [Authorize]
     public class JobController : BaseControllerClass
     {
-        
+
         public JobController(IDatabaseService databaseService) : base(databaseService)
         {
         }
@@ -43,7 +43,7 @@ namespace WebApi_JobService.Controllers
         [HttpPost("addJobByTg")]
         public async Task<IActionResult> AddJobByTg([FromBody] int Id)
         {
-            if ( Id <= 0)
+            if (Id <= 0)
             {
                 return BadRequest("Некорректные данные для задания");
             }
@@ -58,8 +58,6 @@ namespace WebApi_JobService.Controllers
                 return StatusCode(500, $"Ошибка при добавлении задания: {ex.Message}");
             }
         }
-
-        // ---------- НОВЫЕ МЕТОДЫ ----------
 
         // GET api/job/today-count/123
         [HttpGet("today-count/{userId:int}")]

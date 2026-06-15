@@ -1,0 +1,82 @@
+﻿syntax = "proto3";
+
+package jobservice;
+option csharp_namespace = "WebApi_JobService.Protos";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// Модели
+message Job {
+  int32 id = 1;
+  int32 user_id = 2;
+  string job_number = 3;
+  string job_link = 4;
+  string token = 5;
+  string update_request_status = 6;
+  string status = 7;
+  google.protobuf.Timestamp created_at = 8; 
+  int32 telegram_id = 9;
+}
+
+message JobDescriptionAndNote {
+  int32 id = 1;
+  int32 job_id = 2;
+  string job_description = 3;
+  string job_notes = 4;
+  string status = 5;
+  int32 pic_recon = 6;
+  bool google_confirmed = 7;
+  string original_brand = 8;
+  string model = 9;
+  string sticker_link = 10;
+  string serial_number = 11;
+}
+
+message AddJobByTgRequest {
+  int32 telegram_id = 1;
+}
+
+message UpdateDescriptionRequest {
+  int32 job_id = 1;
+  string fulltext = 2;
+}
+
+message UpdatePicCountRequest {
+  int32 job_id = 1;
+  int32 pic_count = 2;
+}
+
+message InsertDescriptionRequest {
+  int32 job_id = 1;
+  string fulltext = 2;
+}
+
+message ConfirmGoogleRequest {
+  string request_word = 1;
+}
+
+// Запросы/ответы
+message GetJobByIdRequest { int32 id = 1; }
+message GetJobByIdResponse { Job job = 1; }
+
+message GetJobsRequest {}
+message GetJobsResponse { repeated JobDescriptionAndNote jobs = 1; }
+
+message UpdateStatusRequest { int32 job_id = 1; int32 status = 2; }
+message UpdateStatusResponse { int32 updated_rows = 1; }
+
+// Сервис
+service JobService {
+  // Job контроллер
+  rpc GetJobById(GetJobByIdRequest) returns (GetJobByIdResponse);
+  rpc GetJobs(GetJobsRequest) returns (GetJobsResponse);
+  rpc AddJobByTg(AddJobByTgRequest) returns (Job);
+  rpc UpdateStatus(UpdateStatusRequest) returns (UpdateStatusResponse);
+  
+  // JobDescAndNotes контроллер  
+  rpc UpdateDescription(UpdateDescriptionRequest) returns (google.protobuf.Empty);
+  rpc UpdatePicCount(UpdatePicCountRequest) returns (google.protobuf.Empty);
+  rpc InsertDescription(InsertDescriptionRequest) returns (google.protobuf.Empty);
+  rpc ConfirmGoogle(ConfirmGoogleRequest) returns (google.protobuf.Empty);
+}

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WebApi_AuthService.Services;
 
 namespace WebApi_AuthService.Controllers
@@ -29,6 +30,7 @@ namespace WebApi_AuthService.Controllers
         }
 
         [HttpPost("token")]
+        [EnableRateLimiting("token")]
         public async Task<IActionResult> Token([FromForm] ClientCredentialsRequest request)
         {
             if (!string.Equals(request.grant_type, "client_credentials", StringComparison.OrdinalIgnoreCase))

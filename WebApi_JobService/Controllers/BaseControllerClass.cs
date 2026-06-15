@@ -7,7 +7,7 @@ namespace WebApi_JobService.Controllers
     [Route("api/[controller]")]
     public abstract class BaseControllerClass : ControllerBase
     {
-        
+
         protected readonly IDatabaseService _databaseService;
 
         protected BaseControllerClass(IDatabaseService databaseService)

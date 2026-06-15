@@ -1,5 +1,6 @@
-﻿using KameraData.Data.Models;
+﻿
 using Newtonsoft.Json;
+using WebApi_JobService.Infrastructure.Persistence.Entities;
 
 namespace WebApi_JobService
 {

@@ -1,4 +1,5 @@
-using KameraData.Data.Models;
+
+using JobService.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_JobService.Services;

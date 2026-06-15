@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace KameraData.Data.Models;
+namespace WebApi_JobService.Infrastructure.Persistence.Entities;
 
 [Table("job_description_and_notes")]
 
