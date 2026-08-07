@@ -5,6 +5,7 @@ using KameraData.Events;
 using MassTransit;
 using MassTransit.Extensions.Hosting;
 using MassTransit.Transports;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using SharedMicroserviceLibrary.Middleware;
@@ -37,14 +38,25 @@ namespace WebApi_JobService.Services
         {
             try
             {
-                return await _dbContext.Database.CanConnectAsync();
+                // 🔥 +1: не только connect, но и query
+                var canConnect = await _dbContext.Database.CanConnectAsync();
+                if (!canConnect) return false;
+
+                // 🔥 +2: тестовая query
+                var count = await _dbContext.JobDescriptionAndNotes
+                    .FromSqlRaw("SELECT COUNT(*) FROM JobDescriptionAndNotes WITH (NOLOCK)")
+                    .AsNoTracking()
+                    .CountAsync();
+
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Ошибка проверки подключения к базе данных");
+                _logger.Error(ex, "База данных недоступна");
                 return false;
             }
         }
+
 
         #region job_description_and_notes
         public async Task<IEnumerable<JobDescriptionAndNote>> GetJobsAsync()
@@ -53,12 +65,13 @@ namespace WebApi_JobService.Services
             {
                 return await _dbContext.JobDescriptionAndNotes
                     .Where(j => j.Status == "0")
+                    .AsNoTracking()  // 🔥 +1: read-only, быстрее
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.Error("Ошибка при получении заданий: " + ex);
-                return new List<JobDescriptionAndNote>();
+                _logger.Error(ex, "Ошибка при получении заданий"); // 🔥 +2: structured logging
+                return Array.Empty<JobDescriptionAndNote>(); // 🔥 +3: вместо new List
             }
         }
 
@@ -68,13 +81,13 @@ namespace WebApi_JobService.Services
             {
                 return await _dbContext.JobDescriptionAndNotes
                     .Where(j => j.JobId == jobID)
+                    .AsNoTracking()
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + "джоб ид:" + jobID + " - " + ex);
-                return new List<JobDescriptionAndNote>();
+                _logger.Error(ex, "Ошибка получения JobDescriptionAndNote JobId={JobId}", jobID);
+                return Array.Empty<JobDescriptionAndNote>();
             }
         }
 
@@ -82,42 +95,60 @@ namespace WebApi_JobService.Services
         {
             try
             {
-                var jobDescriptions = await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.JobId == jobId)
-                    .ToListAsync();
-
-                foreach (var jobDescription in jobDescriptions)
+                if (jobId <= 0)
                 {
-                    jobDescription.Status = status.ToString();
+                    _logger.Warn($"Некорректный JobId={jobId}");
+                    return;
                 }
 
-                await _dbContext.SaveChangesAsync();
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+                await strategy.ExecuteAsync(async () =>
+                {
+                    var updatedRows = await _dbContext.JobDescriptionAndNotes
+                        .Where(j => j.JobId == jobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.Status, status.ToString()));
+
+                    _logger.Info($"✅ Обновлено Status={status} для {updatedRows} записей JobId={jobId}");
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
+                _logger.Error($"💥 Ошибка обновления Status JobId={jobId}: {ex}");
+                throw;
             }
         }
+
         public async Task UpdateDescriptionAndNotesDescriptionAsync(int jobId, string fulltext)
         {
             try
             {
-                var jobDescriptions = await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.JobId == jobId)
-                    .ToListAsync();
-
-                foreach (var jobDescription in jobDescriptions)
+                if (jobId <= 0 || string.IsNullOrWhiteSpace(fulltext))
                 {
-                    jobDescription.JobDescription = fulltext;
+                    _logger.Warn($"Некорректные параметры: JobId={jobId}, fulltext length={fulltext?.Length ?? 0}");
+                    return;
                 }
 
-                await _dbContext.SaveChangesAsync();
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+                await strategy.ExecuteAsync(async () =>
+                {
+                    // Заменяем ' на пробел для SQL safety
+                    var safeFulltext = fulltext.Replace('\'', ' ');
+
+                    var updatedRows = await _dbContext.JobDescriptionAndNotes
+                        .Where(j => j.JobId == jobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.JobDescription, safeFulltext));
+
+                    _logger.Info($"✅ Обновлено JobDescription для {updatedRows} записей JobId={jobId}, length={safeFulltext.Length}");
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
+                _logger.Error($"💥 Ошибка обновления JobDescription JobId={jobId}: {ex}");
+                throw;
             }
         }
 
@@ -125,78 +156,128 @@ namespace WebApi_JobService.Services
         {
             try
             {
-                var jobDescriptions = await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.JobId == jobId)
-                    .ToListAsync();
-
-                foreach (var jobDescription in jobDescriptions)
+                if (jobId <= 0)
                 {
-                    jobDescription.PicRecon = pic_count;
+                    _logger.Warn($"Некорректный JobId={jobId}");
+                    return;
                 }
 
-                await _dbContext.SaveChangesAsync();
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+                await strategy.ExecuteAsync(async () =>
+                {
+                    var updatedRows = await _dbContext.JobDescriptionAndNotes
+                        .Where(j => j.JobId == jobId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.PicRecon, pic_count));
+
+                    _logger.Info($"✅ Обновлено PicRecon={pic_count} для {updatedRows} записей JobId={jobId}");
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
+                _logger.Error($"💥 Ошибка обновления PicRecon JobId={jobId}: {ex}");
+                throw;
             }
         }
+
         public async Task InsertDescriptionAndNotesDescriptionAsync(int jobId, string fulltext)
         {
             try
             {
+                if (jobId <= 0 || string.IsNullOrWhiteSpace(fulltext))
+                {
+                    _logger.Warn($"Некорректные параметры: JobId={jobId}, fulltext length={fulltext?.Length ?? 0}");
+                    return;
+                }
+
                 var jobDescription = new JobDescriptionAndNote
                 {
                     JobId = jobId,
-                    JobDescription = fulltext.Replace('\'', ' '),
-                    Status = "0" // или любое другое значение по умолчанию
+                    JobDescription = fulltext.Replace('\'', ' '), // Escaping
+                    Status = "0"
                 };
 
-                await _dbContext.JobDescriptionAndNotes.AddAsync(jobDescription);
-                await _dbContext.SaveChangesAsync();
+                const int maxRetries = 3;
+                var delayMs = 50; // Меньше для INSERT
+
+                for (int retry = 0; retry < maxRetries; retry++)
+                {
+                    try
+                    {
+                        await _dbContext.JobDescriptionAndNotes.AddAsync(jobDescription);
+                        await _dbContext.SaveChangesAsync();
+
+                        _logger.Info($"✅ Добавлена JobDescriptionAndNote для JobId={jobId}, ID={jobDescription.Id}");
+                        return;
+                    }
+                    catch (DbUpdateException ex) when (IsDeadlock(ex) && retry < maxRetries - 1)
+                    {
+                        _dbContext.Entry(jobDescription).State = EntityState.Detached; // Очистка change tracker
+                        _logger.Warn($"⚠️ Deadlock INSERT #{retry + 1}/{maxRetries} для JobId={jobId}. Retry через {delayMs}ms");
+                        await Task.Delay(delayMs);
+                        delayMs *= 2; // 50, 100, 200ms
+                    }
+                }
+
+                _logger.Error($"❌ INSERT failed после {maxRetries} попыток для JobId={jobId}");
+                throw new InvalidOperationException($"Не удалось вставить JobDescriptionAndNote для JobId={jobId}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                _logger.Error("Ошибка:" + ex);
+                _logger.Error($"💥 Критическая ошибка INSERT JobDescriptionAndNote JobId={jobId}: {ex}");
+                throw;
             }
         }
+
+
 
         public async Task MarkJobDescriptionsGoogleConfirmedAsync(string requestWord)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(requestWord))
-                    return;
-
+                if (string.IsNullOrWhiteSpace(requestWord)) return;
                 var normalized = requestWord.Trim().ToUpper();
 
-                var items = await _dbContext.JobDescriptionAndNotes
-                    .Where(j => (j.GoogleConfirmed == null || j.GoogleConfirmed == 0))
-                    .ToListAsync();
-
-                foreach (var j in items)
+                const int maxRetries = 3;
+                for (int retry = 0; retry < maxRetries; retry++)
                 {
-                    var text = ((j.JobDescription ?? string.Empty) + (j.JobNotes ?? string.Empty))
-                        .Trim()
-                        .ToUpper();
-
-                    _logger.Info(" текст из джоб дескрипшен энд нотес: " + text + "- текст для апдейта из запроса: " + requestWord);
-                    if (text == normalized)
+                    try
                     {
-                        j.GoogleConfirmed = 1;
+                        var tableName = _dbContext.Model.FindEntityType(typeof(JobDescriptionAndNote))!.GetTableName()!;
+                        var sql = $@"UPDATE [job_description_and_notes] WITH (ROWLOCK, UPDLOCK)
+                            SET [google_confirmed] = 1           -- 🔥 snake_case!
+                            WHERE ([google_confirmed] IS NULL OR [google_confirmed] = 0)
+                            AND UPPER(LTRIM(RTRIM(ISNULL([job_description],'') + ISNULL([job_notes], '')))) = @p0";
+
+
+                        var updatedRows = await _dbContext.Database
+                            .ExecuteSqlRawAsync(sql, normalized);
+
+                        _logger.Info($"✅ Raw SQL: обновлено {updatedRows} записей GoogleConfirmed для '{requestWord}'");
+                        return;
+                    }
+                    catch (SqlException ex) when (IsTransientError(ex) && retry < maxRetries - 1)
+                    {
+                        _logger.Warn($"⚠️ SQL Error #{retry + 1}: {ex.Number} - {ex.Message}");
+                        await Task.Delay(100 * (retry + 1));
                     }
                 }
-
-                await _dbContext.SaveChangesAsync();
+                throw new InvalidOperationException($"Failed after 3 retries for '{requestWord}'");
             }
             catch (Exception ex)
             {
-                _logger.Error("Ошибка при обновлении google_confirmed: " + ex);
+                _logger.Error(ex, $"💥 MarkJobDescriptionsGoogleConfirmedAsync failed: {requestWord}");
                 throw;
             }
         }
+
+        private static bool IsTransientError(SqlException ex) =>
+            ex.Number is 1205 or 1222 or 49918 or 49919; // Deadlock, timeout, transient
+
+
+        private static bool IsDeadlock(DbUpdateException ex) =>
+         ex.InnerException is SqlException sqlEx &&
+         (sqlEx.Number == 1205 /* deadlock */ || sqlEx.Number == 1222 /* lock timeout */);
 
         #endregion
 
@@ -285,44 +366,7 @@ namespace WebApi_JobService.Services
             }
         }
 
-        //public async Task<Job> AddJobByTgAsync(int Id)
-        //{
-        //    try
-        //    {
-        //       // var userId = _dbContext.Users.Where(x => x.TelegramId == Id).FirstOrDefault(); заменяем на работу с сервисом UserService
-        //        var userId = await _userServiceClient.GetUserByTelegramIdAsync(Id); // Внешний http/rpc-клиент
-
-        //        if (userId == null || userId.Id < 1)
-        //        {
-        //            throw new Exception($"Пользователь с Telegram ID {Id} не найден.");
-        //        }
-        //        // Находим максимальный JobNumber
-        //        var maxJobNumber = await _dbContext.Jobs
-        //            .MaxAsync(j => Convert.ToInt32(j.JobNumber)); // Получаем максимальный номер или 0, если нет заданий
-
-        //        // Создаем новый объект Job
-        //        var newJob = new Job
-        //        {
-        //            UserId = userId.Id,
-        //            JobNumber = (maxJobNumber + 1).ToString(), // Уникальный номер задания
-        //            JobLink = string.Empty, // Пустая строка для JobLink
-        //            UpdateRequestStatus = string.Empty // Пустая строка для UpdateRequestStatus
-        //        };
-
-        //        // Добавляем объект в контекст
-        //        await _dbContext.Jobs.AddAsync(newJob);
-
-        //        // Сохраняем изменения в базе данных
-        //        await _dbContext.SaveChangesAsync();
-
-        //        return newJob; // Возвращаем добавленный объект
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.Error("Ошибка при добавлении задания: " + ex);
-        //        throw; // Пробрасываем исключение дальше
-        //    }
-        //}
+        
         public async Task<Job> AddJobByTgAsync(int telegramId)
         {
             var maxJobNumber = await _dbContext.Jobs

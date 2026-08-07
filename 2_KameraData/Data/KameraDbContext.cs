@@ -125,8 +125,20 @@ public partial class KameraDbContext : DbContext
     {
         if (optionsBuilder.IsConfigured) return;
 
-            optionsBuilder.UseSqlServer(_connectionString);
-           
+        optionsBuilder.UseSqlServer(_connectionString, o =>
+        {
+            // 🔧 DEADLOCK PROTECTION
+            o.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: new[] { 1205, 1222, 49918, 49919 } // Deadlock + Azure SQL
+            );
+
+            // ⚡ PERFORMANCE
+            o.CommandTimeout(30);
+            o.MaxBatchSize(1000);
+            o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);          
+        });
     }
 
 

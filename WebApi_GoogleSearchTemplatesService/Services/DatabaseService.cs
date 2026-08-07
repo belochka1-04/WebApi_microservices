@@ -194,7 +194,10 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 		{
 			try
 			{
+				batchSize = Math.Clamp(batchSize, 1, 100);
+
 				return await _dbContext.GoogleModelRequests
+					.AsNoTracking()
 					.Where(r => r.Status == 0)
 					.OrderBy(r => r.CreatedAt)
 					.Take(batchSize)

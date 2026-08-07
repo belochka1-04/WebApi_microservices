@@ -1,4 +1,4 @@
-using KameraData.Data;
+п»їusing KameraData.Data;
 using KameraData.Events;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -43,13 +43,13 @@ builder.Services.AddCustomServices(
     apiVersion: "v1",
     addJwtToSwagger: true);
 
-// JWT аутентификация (принимаем токены AuthService)
+// JWT Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ (РїСЂРёРЅРёРјР°РµРј С‚РѕРєРµРЅС‹ AuthService)
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
-// HttpClient для UserService (при необходимости)
+// HttpClient РґР»СЏ UserService (РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё)
 builder.Services.AddHttpClient<UserServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("http://your-userservice-host/"); // TODO: реальный URL UserService
+    client.BaseAddress = new Uri("http://localhost:7050/"); // TODO: СЂРµР°Р»СЊРЅС‹Р№ URL UserService
 });
 
 // ===== 3. MassTransit / RabbitMQ =====
@@ -80,29 +80,35 @@ builder.Host.UseWindowsService();
 
 var app = builder.Build();
 
-// ===== 5. Middleware pipeline =====
+// ===== 5. Middleware pipeline 
 
-// Swagger
-//if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+// 1пёЏ Swagger (СЃР°РјС‹Р№ РїРµСЂРІС‹Р№!)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Job Service API v1");
-        c.RoutePrefix = string.Empty;
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Job Service API v1");
+    c.RoutePrefix = string.Empty;
+});
 
-app.UseHttpsRedirection();
-
+// 2пёЏ Health/Metrics (РґРѕ Auth)
 app.UseHealthCheck();
-app.UseRequestLogging();
+app.UseHttpMetrics();
 
+// 3пёЏ Auth (JWT РґР»СЏ API)
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpMetrics();
+// 4пёЏ Request logging (РїРѕСЃР»Рµ Auth)
+app.UseRequestLogging();
+
+// 5пёЏ HTTPS (РїРѕСЃР»РµРґРЅРёР№, РµСЃР»Рё РЅСѓР¶РµРЅ)
+if (!app.Environment.IsProduction())
+    app.UseHttpsRedirection();
+
+// 6пёЏ Controllers 
+app.MapControllers();
 app.MapMetrics("/metrics");
+
 
 app.MapControllers();
 

@@ -1,4 +1,4 @@
-п»їFROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER $APP_UID
 WORKDIR /app
 EXPOSE 80
@@ -7,12 +7,20 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# РїСѓС‚Рё вЂ” РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РєРѕРЅС‚РµРєСЃС‚Р° (РєРѕСЂРЅСЏ microservices), Р° РЅРµ РїР°РїРєРё Dockerfile
+# пути — относительно контекста (корня microservices), а не папки Dockerfile
 COPY WebApi_PartSourceService/WebApi_PartSourceService.csproj WebApi_PartSourceService/
 COPY 2_KameraData/KameraData.csproj 2_KameraData/
 COPY SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj SharedMicroserviceLibrary/
 
-RUN dotnet restore WebApi_PartSourceService/WebApi_PartSourceService.csproj
+RUN for i in 1 2 3 4 5; do \
+    dotnet restore WebApi_PartSourceService/WebApi_PartSourceService.csproj \
+      --source https://www.nuget.org/api/v2/ \
+      --disable-parallel \
+    && break; \
+    if [ "$i" = "5" ]; then exit 1; fi; \
+    echo "dotnet restore failed, retry $i/5"; \
+    sleep 15; \
+  done
 
 COPY . .
 WORKDIR /src/WebApi_PartSourceService

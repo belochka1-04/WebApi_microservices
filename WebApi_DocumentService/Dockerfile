@@ -18,7 +18,15 @@ COPY WebApi_DocumentService/WebApi_document.csproj WebApi_DocumentService/
 COPY 2_KameraData/KameraData.csproj 2_KameraData/
 COPY SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj SharedMicroserviceLibrary/
 
-RUN dotnet restore WebApi_DocumentService/WebApi_document.csproj
+RUN for i in 1 2 3 4 5; do \
+    dotnet restore WebApi_DocumentService/WebApi_document.csproj \
+      --source https://www.nuget.org/api/v2/ \
+      --disable-parallel \
+    && break; \
+    if [ "$i" = "5" ]; then exit 1; fi; \
+    echo "dotnet restore failed, retry $i/5"; \
+    sleep 15; \
+  done
 
 COPY . .
 WORKDIR /src/WebApi_DocumentService

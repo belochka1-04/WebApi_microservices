@@ -14,7 +14,17 @@ var connectionString = builder.Configuration.GetConnectionString("KameraDb")
     ?? throw new InvalidOperationException("Connection string 'KameraDb' not found in configuration.");
 
 builder.Services.AddDbContext<KameraDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: new[] { 1205, 1222, 49918, 49919 });
+
+        sqlOptions.CommandTimeout(30);
+        sqlOptions.MaxBatchSize(1000);
+        sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+    }));
 
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IDatabaseHealthCheck, DatabaseService>();

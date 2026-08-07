@@ -1,5 +1,6 @@
 using KameraData.Data;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Prometheus;
 using Serilog;
@@ -7,6 +8,7 @@ using SharedMicroserviceLibrary.Authentication;
 using SharedMicroserviceLibrary.Extensions;
 using SharedMicroserviceLibrary.Logging;
 using SharedMicroserviceLibrary.Middleware;
+using System.Threading.RateLimiting;
 using WebApi_AuthService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +27,17 @@ builder.Services.AddDbContext<KameraDbContext>(options =>
 // ================================
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("token", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 10;      // 10 попыток
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
+});
+
 
 // ================================
 // 3. APPLICATION SERVICES
@@ -62,7 +75,8 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
-
+//Limit
+app.UseRateLimiter();
 // Health / logging
 app.UseHealthCheck();
 app.UseRequestLogging();

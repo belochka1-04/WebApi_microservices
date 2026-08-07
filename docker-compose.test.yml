@@ -1,0 +1,101 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: appliance-stick-bot-test-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - appliance-stick-bot-test
+    restart: unless-stopped
+
+  authservice:
+    build:
+      context: .
+      dockerfile: WebApi_AuthService/Dockerfile
+    image: appliance-stick-bot/authservice:test
+    container_name: appliance-stick-bot-test-authservice
+    ports:
+      - "5101:80"
+    env_file:
+      - .env.test
+    networks:
+      - appliance-stick-bot-test
+    restart: unless-stopped
+
+  jobservice:
+    build:
+      context: .
+      dockerfile: WebApi_JobService/Dockerfile
+    image: appliance-stick-bot/jobservice:test
+    container_name: appliance-stick-bot-test-jobservice
+    ports:
+      - "5102:80"
+    env_file:
+      - .env.test
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - appliance-stick-bot-test
+    restart: unless-stopped
+
+  googlesearchtemplatesservice:
+    build:
+      context: .
+      dockerfile: WebApi_GoogleSearchTemplatesService/Dockerfile
+    image: appliance-stick-bot/googlesearchtemplatesservice:test
+    container_name: appliance-stick-bot-test-googlesearchtemplatesservice
+    ports:
+      - "5103:80"
+    env_file:
+      - .env.test
+    networks:
+      - appliance-stick-bot-test
+    restart: unless-stopped
+
+  modelcatalogservice:
+    build:
+      context: .
+      dockerfile: WebApi_ModelCatalogService/Dockerfile
+    image: appliance-stick-bot/modelcatalogservice:test
+    container_name: appliance-stick-bot-test-modelcatalogservice
+    ports:
+      - "5104:80"
+    env_file:
+      - .env.test
+    networks:
+      - appliance-stick-bot-test
+    restart: unless-stopped
+
+  userservice:
+    build:
+      context: .
+      dockerfile: WebApi_UserService/Dockerfile
+    image: appliance-stick-bot/userservice:test
+    container_name: appliance-stick-bot-test-userservice
+    ports:
+      - "5105:80"
+    env_file:
+      - .env.test
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      authservice:
+        condition: service_started
+    networks:
+      - appliance-stick-bot-test
+    restart: unless-stopped
+
+networks:
+  appliance-stick-bot-test:
+    name: appliance-stick-bot-test
+    driver: bridge

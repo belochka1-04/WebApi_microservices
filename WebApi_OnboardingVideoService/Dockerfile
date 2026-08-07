@@ -17,7 +17,15 @@ COPY WebApi_OnboardingVideoService/WebApi_OnboardingVideoService.csproj WebApi_O
 COPY 2_KameraData/KameraData.csproj 2_KameraData/
 COPY SharedMicroserviceLibrary/SharedMicroserviceLibrary.csproj SharedMicroserviceLibrary/
 
-RUN dotnet restore WebApi_OnboardingVideoService/WebApi_OnboardingVideoService.csproj
+RUN for i in 1 2 3 4 5; do \
+    dotnet restore WebApi_OnboardingVideoService/WebApi_OnboardingVideoService.csproj \
+      --source https://www.nuget.org/api/v2/ \
+      --disable-parallel \
+    && break; \
+    if [ "$i" = "5" ]; then exit 1; fi; \
+    echo "dotnet restore failed, retry $i/5"; \
+    sleep 15; \
+  done
 
 COPY . .
 WORKDIR /src/WebApi_OnboardingVideoService
