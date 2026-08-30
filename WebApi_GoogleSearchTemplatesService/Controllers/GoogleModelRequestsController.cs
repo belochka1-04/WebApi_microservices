@@ -37,6 +37,31 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
             }
         }
 
+        [HttpGet("claim-pending")]
+        [ProducesResponseType(typeof(List<GoogleModelRequest>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<GoogleModelRequest>>> ClaimPending(
+            [FromQuery] string workerId,
+            [FromQuery] int batchSize = 100,
+            [FromQuery] int leaseSeconds = 900)
+        {
+            if (string.IsNullOrWhiteSpace(workerId))
+                workerId = Environment.MachineName;
+
+            if (batchSize <= 0)
+                batchSize = 100;
+
+            try
+            {
+                var items = await _databaseService.ClaimPendingGoogleRequestsAsync(workerId, batchSize, leaseSeconds);
+                return Ok(items);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error claiming pending GoogleModelRequests: {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// Создать новый запрос к Google.
         /// POST /api/GoogleModelRequests

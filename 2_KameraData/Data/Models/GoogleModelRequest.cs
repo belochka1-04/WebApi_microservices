@@ -20,5 +20,13 @@ public partial class GoogleModelRequest
         /// Статус запроса (0 – новый, 1 – обработан и т.п.).
         /// </summary>
         public byte Status { get; set; }
+
+        public string? WorkerId { get; set; }
+
+        public DateTime? LeaseUntil { get; set; }
+
+        public int AttemptCount { get; set; }
+
+        public string? LastError { get; set; }
     }
 

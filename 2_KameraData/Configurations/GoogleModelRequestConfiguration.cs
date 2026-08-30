@@ -38,6 +38,23 @@ namespace KameraData.Configurations
                 .HasColumnName("Status")
                 .HasDefaultValue((byte)0)
                 .IsRequired();
+
+            builder.Property(x => x.WorkerId)
+                .HasColumnName("WorkerId")
+                .HasMaxLength(128);
+
+            builder.Property(x => x.LeaseUntil)
+                .HasColumnName("LeaseUntil")
+                .HasColumnType("datetime2(3)");
+
+            builder.Property(x => x.AttemptCount)
+                .HasColumnName("AttemptCount")
+                .HasDefaultValue(0)
+                .IsRequired();
+
+            builder.Property(x => x.LastError)
+                .HasColumnName("LastError")
+                .HasMaxLength(1000);
         }
     }
 }

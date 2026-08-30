@@ -1,6 +1,7 @@
 ﻿using KameraData.Data;
 using KameraData.Data.Dtos;
 using KameraData.Data.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NLog;
@@ -206,6 +207,56 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 			catch (Exception ex)
 			{
 				_logger.Error(ex, "Error fetching pending GoogleModelRequests");
+				throw;
+			}
+		}
+
+		public async Task<List<GoogleModelRequest>> ClaimPendingGoogleRequestsAsync(string workerId, int batchSize, int leaseSeconds)
+		{
+			batchSize = Math.Clamp(batchSize, 1, 100);
+			leaseSeconds = Math.Clamp(leaseSeconds, 60, 3600);
+			workerId = string.IsNullOrWhiteSpace(workerId) ? Environment.MachineName : workerId.Trim();
+			if (workerId.Length > 128)
+				workerId = workerId[..128];
+
+			try
+			{
+				var batchSizeParam = new SqlParameter("@batchSize", batchSize);
+				var workerIdParam = new SqlParameter("@workerId", workerId);
+				var leaseSecondsParam = new SqlParameter("@leaseSeconds", leaseSeconds);
+
+				return await _dbContext.GoogleModelRequests
+					.FromSqlRaw("""
+DECLARE @claimed TABLE (Id int NOT NULL PRIMARY KEY);
+
+;WITH next_rows AS
+(
+    SELECT TOP (@batchSize) *
+    FROM dbo.GoogleModelRequests WITH (UPDLOCK, READPAST, ROWLOCK)
+    WHERE Status = 0
+       OR (Status = 2 AND LeaseUntil IS NOT NULL AND LeaseUntil < SYSUTCDATETIME())
+    ORDER BY CreatedAt, Id
+)
+UPDATE next_rows
+SET Status = 2,
+    WorkerId = @workerId,
+    LeaseUntil = DATEADD(second, @leaseSeconds, SYSUTCDATETIME()),
+    AttemptCount = ISNULL(AttemptCount, 0) + 1,
+    LastCheckedAt = SYSUTCDATETIME(),
+    LastError = NULL
+OUTPUT INSERTED.Id INTO @claimed(Id);
+
+SELECT g.*
+FROM dbo.GoogleModelRequests AS g
+INNER JOIN @claimed AS c ON c.Id = g.Id
+ORDER BY g.CreatedAt, g.Id;
+""", batchSizeParam, workerIdParam, leaseSecondsParam)
+					.AsNoTracking()
+					.ToListAsync();
+			}
+			catch (Exception ex)
+			{
+				_logger.Error(ex, "Error claiming pending GoogleModelRequests");
 				throw;
 			}
 		}
