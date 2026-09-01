@@ -67,8 +67,20 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 
 			try
 			{
+				var requestIds = items
+					.Select(x => x.GoogleModelRequestId)
+					.Distinct()
+					.ToList();
+
+				await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+				await _dbContext.GoogleSerpRaws
+					.Where(x => requestIds.Contains(x.GoogleModelRequestId))
+					.ExecuteDeleteAsync();
+
 				await _dbContext.GoogleSerpRaws.AddRangeAsync(items);
 				await _dbContext.SaveChangesAsync();
+				await transaction.CommitAsync();
 
 				var ids = items.Select(x => x.Id).ToList();
 				_logger.Info("Inserted {Count} google_serp_raw records", ids.Count);
@@ -288,6 +300,53 @@ ORDER BY g.CreatedAt, g.Id;
 		public async Task MarkGoogleModelRequestProcessedAsync(int id)
 		{
 			await UpdateGoogleModelRequestStatusAsync(id, 1);
+		}
+
+		public async Task MarkGoogleModelRequestFailedAsync(int id, string error, int retryDelaySeconds, int maxAttempts)
+		{
+			retryDelaySeconds = Math.Clamp(retryDelaySeconds, 60, 86400);
+			maxAttempts = Math.Clamp(maxAttempts, 1, 100);
+			error = string.IsNullOrWhiteSpace(error) ? "Unknown error" : error.Trim();
+			if (error.Length > 1000)
+				error = error[..1000];
+
+			try
+			{
+				var entity = await _dbContext.GoogleModelRequests.FirstOrDefaultAsync(r => r.Id == id);
+				if (entity == null)
+				{
+					_logger.Warn("GoogleModelRequest Id={Id} not found", id);
+					return;
+				}
+
+				entity.LastCheckedAt = DateTime.UtcNow;
+				entity.LastError = error;
+
+				if (entity.AttemptCount >= maxAttempts)
+				{
+					entity.Status = 3;
+					entity.LeaseUntil = null;
+				}
+				else
+				{
+					entity.Status = 2;
+					entity.LeaseUntil = DateTime.UtcNow.AddSeconds(retryDelaySeconds);
+				}
+
+				await _dbContext.SaveChangesAsync();
+
+				_logger.Warn(
+					"Marked GoogleModelRequest Id={Id} as failed/retry Status={Status}, AttemptCount={AttemptCount}, LeaseUntil={LeaseUntil}",
+					id,
+					entity.Status,
+					entity.AttemptCount,
+					entity.LeaseUntil);
+			}
+			catch (Exception ex)
+			{
+				_logger.Error(ex, "Error marking GoogleModelRequest Id={Id} as failed", id);
+				throw;
+			}
 		}
 
 		public async Task UpdateGoogleModelRequestStatusAsync(int id, byte status)

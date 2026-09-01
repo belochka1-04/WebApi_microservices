@@ -75,6 +75,11 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 		Task MarkGoogleModelRequestProcessedAsync(int id);
 
 		/// <summary>
+		/// Пометить запрос как упавший: вернуть в processing с отложенным lease либо закрыть как failed.
+		/// </summary>
+		Task MarkGoogleModelRequestFailedAsync(int id, string error, int retryDelaySeconds, int maxAttempts);
+
+		/// <summary>
 		/// Обновить статус запроса (произвольное значение Status).
 		/// </summary>
 		Task UpdateGoogleModelRequestStatusAsync(int id, byte status);

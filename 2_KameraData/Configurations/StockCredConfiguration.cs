@@ -45,7 +45,7 @@ namespace KameraData.Data.Configurations
 
             entity.Property(e => e.Partmanager)
                 .HasMaxLength(40)
-                .HasColumnName("part_manager");
+                .HasColumnName("partmanager");
 
             entity.Property(e => e.RecordsCount)
                 .HasDefaultValue(0)
@@ -85,6 +85,28 @@ namespace KameraData.Data.Configurations
 
             entity.Property(e => e.MaxRowsPerUpload)
                 .HasColumnName("max_rows_per_upload");
+
+            entity.Property(e => e.IsDefault)
+                .HasColumnName("IsDefault");
+
+            entity.Property(e => e.SyncLockId)
+                .HasColumnName("sync_lock_id");
+
+            entity.Property(e => e.SyncLockedBy)
+                .HasMaxLength(128)
+                .HasColumnName("sync_locked_by");
+
+            entity.Property(e => e.SyncLeaseUntil)
+                .HasColumnType("datetime2(3)")
+                .HasColumnName("sync_lease_until");
+
+            entity.Property(e => e.SyncAttemptCount)
+                .HasDefaultValue(0)
+                .HasColumnName("sync_attempt_count");
+
+            entity.Property(e => e.SyncLastError)
+                .HasMaxLength(1000)
+                .HasColumnName("sync_last_error");
 
             entity.HasOne(d => d.User)
                 .WithMany(p => p.StockCreds)

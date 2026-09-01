@@ -105,5 +105,33 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
                 return StatusCode(500, $"Ошибка пометки запроса обработанным: {ex.Message}");
             }
         }
+
+        [HttpPost("{id:int}/failed")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> MarkFailed(int id, [FromBody] MarkGoogleModelRequestFailedRequest request)
+        {
+            try
+            {
+                await _databaseService.MarkGoogleModelRequestFailedAsync(
+                    id,
+                    request.Error,
+                    request.RetryDelaySeconds,
+                    request.MaxAttempts);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error marking GoogleModelRequest as failed: {ex.Message}");
+            }
+        }    }
+    public sealed class MarkGoogleModelRequestFailedRequest
+    {
+        public string Error { get; set; } = string.Empty;
+
+        public int RetryDelaySeconds { get; set; } = 300;
+
+        public int MaxAttempts { get; set; } = 5;
     }
 }

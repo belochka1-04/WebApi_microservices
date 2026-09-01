@@ -10,17 +10,17 @@ public partial class Model
     public int Id { get; set; }
 
     [Column("model")]
-    public string model { get; set; } = string.Empty;
+    public string? model { get; set; } = string.Empty;
     [Column("cleaned_model")]
     public string? CleanedModel { get; set; } = null!;
     [Column("source_id")]
-    public int SourceId { get; set; }
+    public int? SourceId { get; set; }
     [Column("brand")]
     public string? Brand { get; set; }
     [Column("confidence")]
     public string? Confidence { get; set; } = null!;
     [Column("categories_id")]
-    public int CategoriesId { get; set; }
+    public int? CategoriesId { get; set; }
 
     public string? FileTitle { get; set; }
 
@@ -34,7 +34,7 @@ public partial class Model
     [Column("local_path")]
     public string? LocalPath { get; set; }
     [Column("date_model")]
-    public DateOnly? DateModel { get; set; }
+    public DateTime? DateModel { get; set; }
     [Column("version")]
     public string? Version { get; set; }
 

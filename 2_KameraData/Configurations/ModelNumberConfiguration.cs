@@ -53,6 +53,23 @@ namespace KameraData.Data.Configurations
             entity.Property(e => e.CleanedModel)
                 .HasColumnName("cleaned_model");
 
+            entity.Property(e => e.WorkerId)
+                .HasColumnName("worker_id")
+                .HasMaxLength(128);
+
+            entity.Property(e => e.LeaseUntil)
+                .HasColumnName("lease_until")
+                .HasColumnType("datetime2(3)");
+
+            entity.Property(e => e.AttemptCount)
+                .HasColumnName("attempt_count")
+                .HasDefaultValue(0)
+                .IsRequired();
+
+            entity.Property(e => e.LastError)
+                .HasColumnName("last_error")
+                .HasMaxLength(2000);
+
             entity.HasOne(d => d.Job)
                 .WithMany(p => p.ModelNumbers)
                 .HasForeignKey(d => d.JobId)

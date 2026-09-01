@@ -39,7 +39,7 @@ namespace KameraData.Data.Configurations
 
             entity.Property(e => e.DateModel)
                 .HasColumnType("datetime")
-                .HasColumnName("datemodel")
+                .HasColumnName("date_model")
                 .HasDefaultValue(null);
 
             entity.Property(e => e.Version)
@@ -58,6 +58,19 @@ namespace KameraData.Data.Configurations
 
             entity.Property(e => e.token)
                 .HasColumnName("token");
+
+            entity.Property(e => e.Link2)
+                .HasMaxLength(255)
+                .HasColumnName("Link2");
+
+            entity.Property(e => e.DocStatus)
+                .HasColumnName("DocStatus");
+
+            entity.Property(e => e.OldId)
+                .HasColumnName("old_id");
+
+            entity.Property(e => e.MId)
+                .HasColumnName("m_id");
 
             entity.HasOne(d => d.DocumentType)
                 .WithMany()

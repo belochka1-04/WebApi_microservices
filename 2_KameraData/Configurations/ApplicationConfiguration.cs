@@ -56,11 +56,11 @@ namespace KameraData.Configurations
 
             entity.Property(e => e.Path)
                   .HasColumnName("path")
-                  .IsRequired(false); // Указывает, что поле может быть NULL
+                  .IsRequired(); // Указывает, что поле не может быть NULL
 
             entity.Property(e => e.Caption)
                .HasColumnName("caption")
-               .IsRequired(false); // Указывает, что поле может быть NULL
+               .IsRequired(); // Указывает, что поле не может быть NULL
 
             entity.Property(e => e.CanStartInStarter)
               .HasColumnType("int")

@@ -146,6 +146,12 @@ namespace WebApi_JobStockService.Services
         {
             try
             {
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+                await _dbContext.JobStocks
+                    .Where(js => js.JobId == jobId && js.UserStockId == userStockId)
+                    .ExecuteDeleteAsync();
+
                 var jobStock = new JobStock
                 {
                     JobId = jobId,
@@ -155,6 +161,7 @@ namespace WebApi_JobStockService.Services
 
                 await _dbContext.JobStocks.AddAsync(jobStock);
                 await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
             catch (DbUpdateException ex)
             {

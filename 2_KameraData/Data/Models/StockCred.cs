@@ -42,6 +42,18 @@ public partial class StockCred
 
     public int? MaxRowsPerUpload { get; set; }
 
+    public int? IsDefault { get; set; }
+
+    public Guid? SyncLockId { get; set; }
+
+    public string? SyncLockedBy { get; set; }
+
+    public DateTime? SyncLeaseUntil { get; set; }
+
+    public int SyncAttemptCount { get; set; }
+
+    public string? SyncLastError { get; set; }
+
     public virtual User? User { get; set; } = null!;
     [JsonIgnore]
     public virtual ICollection<UserStock> UserStocks { get; set; } = new List<UserStock>();

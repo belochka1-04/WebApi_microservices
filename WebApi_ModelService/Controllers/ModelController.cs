@@ -194,7 +194,7 @@ namespace WebApi_ModelService.Controllers
 
         #region newModel
         [HttpGet("getnewmodel")]
-        public async Task<ActionResult<Model>> GetAllNModels()
+        public async Task<ActionResult<List<NModel>>> GetAllNModels()
         {
             var job = await _databaseService.GetAllNModelsAsync();
             if (job == null)

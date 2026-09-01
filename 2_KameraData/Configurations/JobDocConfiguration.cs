@@ -57,6 +57,24 @@ namespace KameraData.Data.Configurations
             entity.Property(e => e.clicked)
                 .HasColumnName("clicked");
 
+            entity.Property(e => e.QaState)
+                .HasColumnName("QaState");
+
+            entity.Property(e => e.VideoState)
+                .HasColumnName("VideoState");
+
+            entity.Property(e => e.ArticleState)
+                .HasColumnName("ArticleState");
+
+            entity.Property(e => e.QaCnt)
+                .HasColumnName("QaCnt");
+
+            entity.Property(e => e.VideoCnt)
+                .HasColumnName("VideoCnt");
+
+            entity.Property(e => e.ArticleCnt)
+                .HasColumnName("ArticleCnt");
+
             entity.HasOne(d => d.Job)
                 .WithMany(p => p.JobDocs)
                 .HasForeignKey(d => d.JobId)

@@ -29,8 +29,8 @@ namespace WebApi_ModelService.Services
         Task<List<KameraData.Data.Models.NModel>> GetNModelsWithNumForTrimAsync(string modelNumber);
 
 
-        Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false);
-        Task<List<Model>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false);
+        Task<ModelTb?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false);
+        Task<List<ModelTb>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false);
         Task UpdateModelLinkStateAsync(int id, int linkState);
 
     }

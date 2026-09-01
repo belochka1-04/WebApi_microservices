@@ -95,6 +95,19 @@ namespace WebApi_ModelNumberService.Controllers
             return Ok(result);
         }
 
+        [HttpGet("claim-next-by-confirmed/{confirm}")]
+        public async Task<ActionResult<ModelNumber>> ClaimNextTask(
+            string confirm,
+            [FromQuery] string workerId,
+            [FromQuery] int leaseSeconds = 900)
+        {
+            if (string.IsNullOrWhiteSpace(workerId))
+                workerId = Environment.MachineName;
+
+            var result = await _databaseService.ClaimNextTaskAsync(confirm, workerId, leaseSeconds);
+            return Ok(result);
+        }
+
         [HttpGet("getwaste")]
         public async Task<ActionResult<List<ModelNumber>>> GetWasteTasksAsync()
         {

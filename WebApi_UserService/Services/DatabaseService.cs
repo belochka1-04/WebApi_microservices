@@ -1,5 +1,6 @@
-﻿using KameraData.Data;
+using KameraData.Data;
 using KameraData.Data.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using SharedMicroserviceLibrary.Middleware;
@@ -125,8 +126,94 @@ namespace WebApi_UserService.Services
             {
                 try
                 {
-                    _dbContext.UserStocks.Add(responce);
-                    await _dbContext.SaveChangesAsync();
+                    var userIdParam = new SqlParameter("@userId", responce.UserId);
+                    var stockIdParam = new SqlParameter("@stockId", responce.StockId);
+                    var partNumberParam = new SqlParameter("@partNumber", responce.PartNumber);
+                    var partsAndReplacesIdParam = new SqlParameter("@partsAndReplacesId", (object?)responce.PartsAndReplacesId ?? DBNull.Value);
+                    var commentParam = new SqlParameter("@comment", (object?)responce.Comment ?? DBNull.Value);
+                    var photoPathParam = new SqlParameter("@photoPath", (object?)responce.PhotoPath ?? DBNull.Value);
+                    var qtyParam = new SqlParameter("@qty", responce.Qty <= 0 ? 1 : responce.Qty);
+                    var priceRawParam = new SqlParameter("@priceRaw", (object?)responce.PriceRaw ?? DBNull.Value);
+                    var priceValueParam = new SqlParameter("@priceValue", (object?)responce.PriceValue ?? DBNull.Value);
+                    var userPartNameParam = new SqlParameter("@userPartName", (object?)responce.UserPartName ?? DBNull.Value);
+                    var linkUrlParam = new SqlParameter("@linkUrl", (object?)responce.LinkUrl ?? DBNull.Value);
+                    var descriptionParam = new SqlParameter("@description", (object?)responce.Description ?? DBNull.Value);
+                    var ownerCommentParam = new SqlParameter("@ownerComment", (object?)responce.OwnerComment ?? DBNull.Value);
+                    var custom1Param = new SqlParameter("@custom1", (object?)responce.Custom1 ?? DBNull.Value);
+                    var custom2Param = new SqlParameter("@custom2", (object?)responce.Custom2 ?? DBNull.Value);
+                    var custom3Param = new SqlParameter("@custom3", (object?)responce.Custom3 ?? DBNull.Value);
+
+                    await _dbContext.Database.ExecuteSqlRawAsync("""
+SET XACT_ABORT ON;
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN TRANSACTION;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.user_stocks WITH (UPDLOCK, HOLDLOCK)
+    WHERE user_id = @userId
+      AND stock_id = @stockId
+      AND part_number = @partNumber
+)
+BEGIN
+    INSERT INTO dbo.user_stocks (
+        user_id,
+        stock_id,
+        part_number,
+        parts_and_replaces_id,
+        Comment,
+        created_at,
+        photo_path,
+        qty,
+        price_raw,
+        price_value,
+        user_part_name,
+        link_url,
+        description,
+        owner_comment,
+        custom_1,
+        custom_2,
+        custom_3
+    )
+    VALUES (
+        @userId,
+        @stockId,
+        @partNumber,
+        @partsAndReplacesId,
+        @comment,
+        GETDATE(),
+        @photoPath,
+        @qty,
+        @priceRaw,
+        @priceValue,
+        @userPartName,
+        @linkUrl,
+        @description,
+        @ownerComment,
+        @custom1,
+        @custom2,
+        @custom3
+    );
+END
+
+COMMIT TRANSACTION;
+""",
+                        userIdParam,
+                        stockIdParam,
+                        partNumberParam,
+                        partsAndReplacesIdParam,
+                        commentParam,
+                        photoPathParam,
+                        qtyParam,
+                        priceRawParam,
+                        priceValueParam,
+                        userPartNameParam,
+                        linkUrlParam,
+                        descriptionParam,
+                        ownerCommentParam,
+                        custom1Param,
+                        custom2Param,
+                        custom3Param);
                 }
                 catch (Exception ex)
                 {

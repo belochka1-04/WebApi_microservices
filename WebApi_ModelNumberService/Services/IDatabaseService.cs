@@ -14,10 +14,10 @@ namespace WebApi_ModelNumberService.Services
         Task<List<ModelNumber>> GetNextTasksWithConfAsync(string Conf);
         Task<ModelNumber> GetNextTaskWithConfAsync(string Conf);
         Task<ModelNumber> PickNextTaskAsync(string Conf);
+        Task<ModelNumber> ClaimNextTaskAsync(string Conf, string workerId, int leaseSeconds);
         Task InsertModelNumberAsync(int jobId, KameraData.Data.Models.Model model, string search_text, int status, int count);
         Task InsertModelNumberBatchAsync(List<ModelNumberRequest> requests);
         Task InsertModelNumberBatchAsync(int jobId, KameraData.Data.Models.Model model, string search_text, int status, int count);
-        Task InsertNModelNumberAsync(int jobId, KameraData.Data.Models.NModel model, string search_text, int status, int count);
         Task DeleteModelNumbersAsync(int jobId);
         Task UpdateOtherModelNumbersStatusAsync(int jobId, int status);
         Task UpdateTaskStatusAsync(int taskId, int status);

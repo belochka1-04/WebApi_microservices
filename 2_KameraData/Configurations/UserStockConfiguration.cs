@@ -27,6 +27,57 @@ namespace KameraData.Data.Configurations
             entity.Property(e => e.PartsAndReplacesId)
                 .HasColumnName("parts_and_replaces_id");
 
+            entity.Property(e => e.Comment)
+                .HasColumnName("Comment");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("getdate()")
+                .HasColumnName("created_at");
+
+            entity.Property(e => e.PhotoPath)
+                .HasColumnName("photo_path");
+
+            entity.Property(e => e.Qty)
+                .HasDefaultValue(1)
+                .HasColumnName("qty");
+
+            entity.Property(e => e.PriceRaw)
+                .HasMaxLength(100)
+                .HasColumnName("price_raw");
+
+            entity.Property(e => e.PriceValue)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("price_value");
+
+            entity.Property(e => e.UserPartName)
+                .HasMaxLength(200)
+                .HasColumnName("user_part_name");
+
+            entity.Property(e => e.LinkUrl)
+                .HasMaxLength(500)
+                .HasColumnName("link_url");
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(1000)
+                .HasColumnName("description");
+
+            entity.Property(e => e.OwnerComment)
+                .HasMaxLength(1000)
+                .HasColumnName("owner_comment");
+
+            entity.Property(e => e.Custom1)
+                .HasMaxLength(500)
+                .HasColumnName("custom_1");
+
+            entity.Property(e => e.Custom2)
+                .HasMaxLength(500)
+                .HasColumnName("custom_2");
+
+            entity.Property(e => e.Custom3)
+                .HasMaxLength(500)
+                .HasColumnName("custom_3");
+
             entity.Property(e => e.StockId)
                 .IsRequired()
                 .HasColumnName("stock_id");

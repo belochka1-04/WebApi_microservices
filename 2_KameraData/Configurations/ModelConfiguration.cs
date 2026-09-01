@@ -21,30 +21,27 @@ namespace KameraData.Data.Configurations
                 .HasColumnName("id");
 
             entity.Property(e => e.Brand)
-                .HasMaxLength(100)
+                .HasMaxLength(150)
                 .HasColumnName("brand")
                 .HasDefaultValue(null);
 
             entity.Property(e => e.CategoriesId)
-                .IsRequired()
                 .HasColumnName("categories_id");
 
             entity.Property(e => e.CleanedModel)
-                .HasMaxLength(40)
+                .HasMaxLength(255)
                 .HasColumnName("cleaned_model");
 
             entity.Property(e => e.Confidence)
-                .HasMaxLength(1)
-                .HasColumnName("confidence")
-                .IsRequired();
+                .HasMaxLength(2)
+                .HasColumnName("confidence");
 
             entity.Property(e => e.DateModel)
-                .HasColumnType("date")
+                .HasColumnType("datetime")
                 .HasColumnName("date_model")
                 .HasDefaultValue(null);
 
             entity.Property(e => e.FileName)
-                .HasMaxLength(100)
                 .HasColumnName("file_names")
                 .HasDefaultValue(null);
 
@@ -54,17 +51,14 @@ namespace KameraData.Data.Configurations
                 .HasDefaultValue(null);
 
             entity.Property(e => e.LocalPath)
-                .HasMaxLength(200)
                 .HasColumnName("local_path")
                 .HasDefaultValue(null);
 
             entity.Property(e => e.model)
-                .HasMaxLength(40)
-                .HasColumnName("model")
-                .IsRequired();
+                .HasMaxLength(150)
+                .HasColumnName("model");
 
             entity.Property(e => e.SourceId)
-                .IsRequired()
                 .HasColumnName("source_id");
 
             entity.Property(e => e.Token)
@@ -78,7 +72,7 @@ namespace KameraData.Data.Configurations
                 .HasDefaultValue(null);
 
             entity.Property(e => e.WebLink)
-                .HasMaxLength(200)
+                .HasMaxLength(255)
                 .HasColumnName("web_link")
                 .HasDefaultValue(null);
         }

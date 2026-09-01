@@ -26,6 +26,14 @@ public partial class ModelNumber
 
     public string? CleanedModel { get; set; } = null!;
 
+    public string? WorkerId { get; set; }
+
+    public DateTime? LeaseUntil { get; set; }
+
+    public int AttemptCount { get; set; }
+
+    public string? LastError { get; set; }
+
     public virtual Job Job { get; set; } = null!;
 
 

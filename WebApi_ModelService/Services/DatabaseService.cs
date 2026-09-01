@@ -25,6 +25,23 @@ namespace WebApi_ModelService.Services
             _logger = LogManager.GetCurrentClassLogger();
         }
 
+        private static NModel ToNModel(ModelTb model)
+        {
+            return new NModel
+            {
+                Id = model.Id,
+                model = model.Title,
+                CleanedModel = model.CleanedModel,
+                SourceId = model.SiteId,
+                BrandModelId = model.BrandModelId,
+                WebLink = model.Link,
+                Token = model.Token,
+                CP_counter = model.CpCounter,
+                Brand = model.BrandModel,
+                Confidence = model.Site
+            };
+        }
+
         public async Task<bool> IsDatabaseHealthyAsync()
         {
             try
@@ -79,8 +96,12 @@ namespace WebApi_ModelService.Services
             {
                 _dbContext.Database.SetCommandTimeout(180);
 
-                var a = _dbContext.NModels.Count();
-                return await _dbContext.NModels.ToListAsync();
+                var models = await _dbContext.ModelTbs
+                    .Include(m => m.BrandModel)
+                    .Include(m => m.Site)
+                    .ToListAsync();
+
+                return models.Select(ToNModel).ToList();
             }
             catch (Exception ex)
             {
@@ -110,7 +131,12 @@ namespace WebApi_ModelService.Services
         {
             try
             {
-                return await _dbContext.NModels.FirstOrDefaultAsync(x => x.Id == Id);
+                var model = await _dbContext.ModelTbs
+                    .Include(m => m.BrandModel)
+                    .Include(m => m.Site)
+                    .FirstOrDefaultAsync(x => x.Id == Id);
+
+                return model == null ? new NModel() : ToNModel(model);
             }
             catch (Exception ex)
             {
@@ -145,10 +171,12 @@ namespace WebApi_ModelService.Services
 
             try
             {
-                return _dbContext.NModels
-                    .Include(n => n.Confidence) // Включаем связанную сущность Confidence
-                    .Include(n => n.Brand) // Включаем связанную сущность Brand
-                    .FirstOrDefault(x => x.Id == Id);
+                var model = await _dbContext.ModelTbs
+                    .Include(m => m.BrandModel)
+                    .Include(m => m.Site)
+                    .FirstOrDefaultAsync(x => x.Id == Id);
+
+                return model == null ? new NModel() : ToNModel(model);
             }
             catch (Exception ex)
             {
@@ -188,10 +216,12 @@ namespace WebApi_ModelService.Services
 
             try
             {
-                models = _dbContext.NModels
-                    .Include(n => n.Confidence) // Включаем связанную сущность Confidence
-                    .Include(n => n.Brand) // Включаем связанную сущность Brand
-                    .Where(x => x.CleanedModel.ToUpper().StartsWith(modelNumber.Trim().ToUpper())).ToList();
+                var modelTbs = await _dbContext.ModelTbs
+                    .Include(m => m.BrandModel)
+                    .Include(m => m.Site)
+                    .Where(x => x.CleanedModel != null && x.CleanedModel.ToUpper().StartsWith(modelNumber.Trim().ToUpper()))
+                    .ToListAsync();
+                models = modelTbs.Select(ToNModel).ToList();
             }
             catch (Exception ex)
             {
@@ -343,12 +373,14 @@ namespace WebApi_ModelService.Services
             {
                 _dbContext.Database.SetCommandTimeout(180);
 
-                return await _dbContext.NModels
-                    .Include(n => n.Confidence) // Включаем связанную сущность Confidence
-                    .Include(n => n.Brand) // Включаем связанную сущность Brand
-                    .Where(x => x.CleanedModel.ToUpper().StartsWith(modelNumber.ToUpper()))
+                var modelTbs = await _dbContext.ModelTbs
+                    .Include(m => m.BrandModel)
+                    .Include(m => m.Site)
+                    .Where(x => x.CleanedModel != null && x.CleanedModel.ToUpper().StartsWith(modelNumber.ToUpper()))
                     // .OrderByDescending(x => x.DateModel)
                     .ToListAsync();
+
+                return modelTbs.Select(ToNModel).ToList();
             }
             catch (Exception ex)
             {
@@ -406,12 +438,14 @@ namespace WebApi_ModelService.Services
         {
             try
             {
-                return await _dbContext.NModels
-                    .Include(n => n.Confidence) // Включаем связанную сущность Confidence
-                    .Include(n => n.Brand) // Включаем связанную сущность Brand
-                    .Where(x => x.CleanedModel.ToUpper() == modelNumber.ToUpper().Trim())
+                var modelTbs = await _dbContext.ModelTbs
+                    .Include(m => m.BrandModel)
+                    .Include(m => m.Site)
+                    .Where(x => x.CleanedModel != null && x.CleanedModel.ToUpper() == modelNumber.ToUpper().Trim())
                     //  .OrderByDescending(x => x.DateModel)
                     .ToListAsync();
+
+                return modelTbs.Select(ToNModel).ToList();
             }
             catch (Exception ex)
             {
@@ -423,13 +457,13 @@ namespace WebApi_ModelService.Services
         #endregion
 
 
-        public async Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false)
+        public async Task<ModelTb?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false)
         {
             try
             {
                 _dbContext.Database.SetCommandTimeout(180);
 
-                var query = _dbContext.Models.AsQueryable();
+                var query = _dbContext.ModelTbs.AsQueryable();
 
                 if (includeBrandModel)
                 {
@@ -455,58 +489,13 @@ namespace WebApi_ModelService.Services
             }
         }
 
-        public async Task<List<Model>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false)
+        public async Task<List<ModelTb>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false)
         {
             try
             {
                 _dbContext.Database.SetCommandTimeout(180);
 
-                var query = _dbContext.Models.Where(m => ids.Contains(m.Id));
-
-                if (includeBrandModel)
-                {
-                    query = query.Include(m => m.BrandModel)
-                                 .ThenInclude(bm => bm.Brand);
-                }
-public async Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = false, bool includeSite = false)
-        {
-            try
-            {
-                _dbContext.Database.SetCommandTimeout(180);
-
-                var query = _dbContext.Models.AsQueryable();
-
-                if (includeBrandModel)
-                {
-                    query = query.Include(m => m.BrandModel)
-                                 .ThenInclude(bm => bm.Brand);
-                }
-
-                if (includeSite)
-                {
-                    query = query.Include(m => m.Site);
-                }
-
-                var model = await query.FirstOrDefaultAsync(m => m.Id == id);
-
-                _logger.Info($"Получена модель {id}, Include: BrandModel={includeBrandModel}, Site={includeSite}");
-
-                return model;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Ошибка получения модели {id}: {ex.Message}");
-                throw;
-            }
-        }
-
-        public async Task<List<Model>> GetModelsByIdsAsync(int[] ids, bool includeBrandModel = false, bool includeSite = false)
-        {
-            try
-            {
-                _dbContext.Database.SetCommandTimeout(180);
-
-                var query = _dbContext.Models.Where(m => ids.Contains(m.Id));
+                var query = _dbContext.ModelTbs.Where(m => ids.Contains(m.Id));
 
                 if (includeBrandModel)
                 {
@@ -538,7 +527,7 @@ public async Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = fal
             {
                 _dbContext.Database.SetCommandTimeout(180);
 
-                var model = await _dbContext.Models.FirstOrDefaultAsync(m => m.Id == id);
+                var model = await _dbContext.ModelTbs.FirstOrDefaultAsync(m => m.Id == id);
 
                 if (model == null)
                 {
@@ -558,3 +547,4 @@ public async Task<Model?> GetModelByIdAsync(int id, bool includeBrandModel = fal
             }
         }
     }
+}

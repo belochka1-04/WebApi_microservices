@@ -54,7 +54,7 @@ namespace KameraData.Configurations
 
             builder.Property(x => x.LastError)
                 .HasColumnName("LastError")
-                .HasMaxLength(1000);
+                .HasMaxLength(2000);
         }
     }
 }

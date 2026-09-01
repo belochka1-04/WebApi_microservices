@@ -10,6 +10,8 @@ namespace WebApi_StockCredsService.Services
     {
         Task UpdateStockCreds(StockCred stockCred);
         Task<List<StockCred>> GetStockCreds();
+        Task<List<StockCred>> ClaimDueStockCreds(string workerId, int batchSize, int leaseSeconds);
+        Task ReleaseStockCredLease(int stockCredId, string workerId);
 
 
     }

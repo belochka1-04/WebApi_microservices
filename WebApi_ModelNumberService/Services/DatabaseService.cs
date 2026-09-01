@@ -42,9 +42,11 @@ namespace WebApi_ModelNumberService.Services
         {
             try
             {
+                var now = DateTime.UtcNow;
                 var wasteTasks = await _dbContext.ModelNumbers
                     .Where(m => m.Confirmed == ((int)KameraData.Data.Other.Status.InWork).ToString() &&
-                                m.GotForWorkAt < DateTime.UtcNow.AddSeconds(-120))
+                                m.LeaseUntil != null &&
+                                m.LeaseUntil < now)
                     .ToListAsync();
 
                 return wasteTasks;
@@ -72,37 +74,58 @@ namespace WebApi_ModelNumberService.Services
             }
         }
 
-        public async Task<ModelNumber> PickNextTaskAsync(string Conf)
+        public Task<ModelNumber> PickNextTaskAsync(string Conf)
+            => ClaimNextTaskAsync(Conf, Environment.MachineName, 900);
+
+        public async Task<ModelNumber> ClaimNextTaskAsync(string Conf, string workerId, int leaseSeconds)
         {
             try
             {
-                using var tx = await _dbContext.Database.BeginTransactionAsync();
+                leaseSeconds = Math.Clamp(leaseSeconds, 60, 3600);
+                workerId = string.IsNullOrWhiteSpace(workerId) ? Environment.MachineName : workerId.Trim();
+                if (workerId.Length > 128)
+                    workerId = workerId[..128];
 
-                var task = await _dbContext.ModelNumbers
-                    .Where(m => m.Confirmed == Conf)
-                    .OrderBy(m => m.Id)
-                    .FirstOrDefaultAsync();
+                var confirmParam = new SqlParameter("@confirmed", Conf);
+                var workerIdParam = new SqlParameter("@workerId", workerId);
+                var leaseSecondsParam = new SqlParameter("@leaseSeconds", leaseSeconds);
 
-                if (task == null)
-                {
-                    await tx.CommitAsync();
-                    return null;
-                }
+                var claimed = await _dbContext.ModelNumbers
+                    .FromSqlRaw("""
+DECLARE @claimed TABLE (id int NOT NULL PRIMARY KEY);
 
-                task.Confirmed = "-1"; // в  работе
-                task.GotForWorkAt = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-                await tx.CommitAsync();
+;WITH next_rows AS
+(
+    SELECT TOP (1) *
+    FROM dbo.model_numbers WITH (UPDLOCK, READPAST, ROWLOCK)
+    WHERE confirmed = @confirmed
+       OR (confirmed = '-1' AND lease_until IS NOT NULL AND lease_until < SYSUTCDATETIME())
+    ORDER BY id
+)
+UPDATE next_rows
+SET confirmed = '-1',
+    got_for_work_at = SYSUTCDATETIME(),
+    worker_id = @workerId,
+    lease_until = DATEADD(second, @leaseSeconds, SYSUTCDATETIME()),
+    attempt_count = ISNULL(attempt_count, 0) + 1,
+    last_error = NULL
+OUTPUT INSERTED.id INTO @claimed(id);
 
-                return task;
+SELECT mn.*
+FROM dbo.model_numbers AS mn
+INNER JOIN @claimed AS c ON c.id = mn.id;
+""", confirmParam, workerIdParam, leaseSecondsParam)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                return claimed.FirstOrDefault();
             }
             catch (Exception ex)
             {
-                _logger.Error($"Ошибка при получении следующей задачи: {ex.Message}");
-                return null; // Возвращаем null в случае ошибки
+                _logger.Error($"Error claiming next model_number task: {ex.Message}");
+                return null;
             }
         }
-
         public async Task<List<ModelNumber>> GetNextTasksWithConfAsync(string Conf)
         {
             try
@@ -220,28 +243,6 @@ namespace WebApi_ModelNumberService.Services
             }
         }
 
-        public async Task InsertNModelNumberAsync(int jobId, KameraData.Data.Models.NModel model, string search_text, int status, int count)
-        {
-            try
-            {
-                var modelNumber = new ModelNumber
-                {
-                    JobId = jobId,
-                    ModelNumber1 = model.model,
-                    Brand = model.Brand.Brand,
-                    MN_request = search_text,
-                    Confirmed = status.ToString(),
-                    DocCounter = count
-                };
-
-                await _dbContext.ModelNumbers.AddAsync(modelNumber);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Ошибка при вставке модели номера: {ex.Message}");
-            }
-        }
         public async Task DeleteModelNumbersAsync(int jobId)
         {
             try
@@ -287,7 +288,16 @@ namespace WebApi_ModelNumberService.Services
                 if (modelNumber != null)
                 {
                     if (status == -1)
+                    {
                         modelNumber.GotForWorkAt = DateTime.Now;
+                    }
+                    else
+                    {
+                        modelNumber.WorkerId = null;
+                        modelNumber.LeaseUntil = null;
+                        modelNumber.LastError = null;
+                    }
+
                     modelNumber.Confirmed = status.ToString();
                     await _dbContext.SaveChangesAsync();
                 }

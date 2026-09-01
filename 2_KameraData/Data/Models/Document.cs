@@ -36,6 +36,14 @@ public partial class Document
     [Column("token")]
     public string? token { get; set; }
 
+    public string? Link2 { get; set; }
+
+    public int DocStatus { get; set; }
+
+    public int? OldId { get; set; }
+
+    public int? MId { get; set; }
+
     // Навигационные свойства для связи с другими таблицами
     //public virtual NModel? Model { get; set; } // Связь с моделью
     public virtual DocumentType? DocumentType { get; set; } // Связь с типом документа

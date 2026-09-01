@@ -34,6 +34,18 @@ public partial class JobDoc
 
     public int? clicked { get; set; }
 
+    public int? QaState { get; set; }
+
+    public int? VideoState { get; set; }
+
+    public int? ArticleState { get; set; }
+
+    public int? QaCnt { get; set; }
+
+    public int? VideoCnt { get; set; }
+
+    public int? ArticleCnt { get; set; }
+
     public virtual Job? Job { get; set; } = null!;
 
     public virtual KameraData.Data.Models.Model? Models { get; set; } = null!;
