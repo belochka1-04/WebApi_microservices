@@ -30,12 +30,12 @@ RUN for i in 1 2 3 4 5; do \
 
 COPY . .
 WORKDIR /src/WebApi_MaskService
-RUN dotnet build WebApi_MaskService.csproj -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build WebApi_MaskService.csproj -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # Публикация проекта службы
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish WebApi_MaskService.csproj -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish WebApi_MaskService.csproj -c $BUILD_CONFIGURATION -o /app/publish --no-restore /p:UseAppHost=false
 
 # Финальный образ для рабочего режима
 FROM base AS final

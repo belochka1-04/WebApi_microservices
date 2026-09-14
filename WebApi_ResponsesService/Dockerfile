@@ -29,12 +29,12 @@ RUN for i in 1 2 3 4 5; do \
 
 COPY . .
 WORKDIR /src/WebApi_ResponsesService
-RUN dotnet build WebApi_ResponsesService.csproj -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build WebApi_ResponsesService.csproj -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish WebApi_ResponsesService.csproj -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish WebApi_ResponsesService.csproj -c $BUILD_CONFIGURATION -o /app/publish --no-restore /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode
 FROM base AS final

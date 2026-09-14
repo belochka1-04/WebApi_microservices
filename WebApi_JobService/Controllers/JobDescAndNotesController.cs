@@ -1,4 +1,5 @@
 using KameraData.Data.Models;
+using KameraData.Data.Other;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi_JobService.Services;
@@ -19,6 +20,18 @@ namespace WebApi_JobService.Controllers
         public async Task<ActionResult<IEnumerable<JobDescriptionAndNote>>> GetJobs()
         {
             var jobs = await _databaseService.GetJobsAsync();
+            return Ok(jobs);
+        }
+
+        [HttpPost("claim")]
+        public async Task<ActionResult<IEnumerable<JobDescriptionAndNote>>> ClaimJobs([FromBody] ClaimJobDescriptionsRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.WorkerId))
+                return BadRequest("WorkerId is required.");
+
+            var batchSize = request.BatchSize <= 0 ? 1 : request.BatchSize;
+            var leaseSeconds = request.LeaseSeconds <= 0 ? 3600 : request.LeaseSeconds;
+            var jobs = await _databaseService.ClaimJobsAsync(request.WorkerId, batchSize, leaseSeconds);
             return Ok(jobs);
         }
 

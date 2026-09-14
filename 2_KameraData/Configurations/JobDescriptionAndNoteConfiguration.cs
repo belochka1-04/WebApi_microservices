@@ -37,6 +37,11 @@ namespace KameraData.Data.Configurations
                 .HasColumnName("pic_counter")
                 .IsRequired(false);
 
+            entity.Property(e => e.PicRecon)
+                .HasColumnType("int")
+                .HasColumnName("pic_recon")
+                .IsRequired(false);
+
             entity.Property(e => e.Status)
                 .HasColumnType("nvarchar(1)")
                 .HasColumnName("status")
@@ -71,6 +76,32 @@ namespace KameraData.Data.Configurations
 
             entity.Property(e => e.GoogleConfirmed)
               .HasColumnName("google_confirmed");
+
+            entity.Property(e => e.FullText)
+                .HasColumnName("full_text");
+
+            entity.Property(e => e.WorkerId)
+                .HasMaxLength(128)
+                .HasColumnName("worker_id");
+
+            entity.Property(e => e.LeaseUntilUtc)
+                .HasColumnType("datetime2")
+                .HasColumnName("lease_until_utc");
+
+            entity.Property(e => e.AttemptCount)
+                .HasColumnName("attempt_count");
+
+            entity.Property(e => e.ProcessingStartedAtUtc)
+                .HasColumnType("datetime2")
+                .HasColumnName("processing_started_at_utc");
+
+            entity.Property(e => e.ProcessingCompletedAtUtc)
+                .HasColumnType("datetime2")
+                .HasColumnName("processing_completed_at_utc");
+
+            entity.Property(e => e.ProcessingLastError)
+                .HasMaxLength(2000)
+                .HasColumnName("processing_last_error");
 
             entity.HasOne(d => d.Job)
                 .WithOne(p => p.JobDescriptionAndNote)

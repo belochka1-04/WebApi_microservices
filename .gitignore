@@ -373,3 +373,4 @@ FodyWeavers.xsd
 /WebApi_JobService/appsettings.json
 /WebApi_ModelCatalogService/appsettings.json
 /client_secret SuperStrongSecretForU.txt
+.env.test

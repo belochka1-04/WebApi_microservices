@@ -33,6 +33,12 @@ public partial class JobDescriptionAndNote
     [Column("google_confirmed")] public int? GoogleConfirmed { get; set; }
     [Column("full_text")] public string? FullText { get; set; }
 
+    [Column("worker_id")] public string? WorkerId { get; set; }
+    [Column("lease_until_utc")] public DateTime? LeaseUntilUtc { get; set; }
+    [Column("attempt_count")] public int AttemptCount { get; set; }
+    [Column("processing_started_at_utc")] public DateTime? ProcessingStartedAtUtc { get; set; }
+    [Column("processing_completed_at_utc")] public DateTime? ProcessingCompletedAtUtc { get; set; }
+    [Column("processing_last_error")] public string? ProcessingLastError { get; set; }
 
     public virtual Job Job { get; set; } = null!;
 }
