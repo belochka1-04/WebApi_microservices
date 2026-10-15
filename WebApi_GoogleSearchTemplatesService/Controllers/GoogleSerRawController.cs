@@ -10,9 +10,12 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
 	[Authorize]
 	public class GoogleSerRawController : BaseControllerClass
 	{
-		public GoogleSerRawController(IDatabaseService databaseService)
+		private readonly ILogger<GoogleSerRawController> _logger;
+
+		public GoogleSerRawController(IDatabaseService databaseService, ILogger<GoogleSerRawController> logger)
 			: base(databaseService)
 		{
+            _logger = logger;
 		}
 
 		/// <summary>
@@ -51,20 +54,30 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
 		[ProducesResponseType(typeof(IReadOnlyList<int>), StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
-		public async Task<ActionResult<IReadOnlyList<int>>> CreateBatch([FromBody] IEnumerable<GoogleSerpRaw> serps)
-		{
-			if (serps == null)
-				return BadRequest("Body is required.");
-
-			try
-			{
-				var ids = await _databaseService.InsertGoogleSerpRawBatchAsync(serps);
-				return Ok(ids);
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, $"Ошибка батч-сохранения SERP: {ex.Message}");
-			}
-		}
-	}
+        public async Task<ActionResult<IReadOnlyList<int>>> CreateBatch([FromBody] IEnumerable<GoogleSerpRaw> serps)
+        {
+            var traceId = HttpContext.TraceIdentifier;
+            Response.Headers["X-Trace-Id"] = traceId;
+            if (serps == null)
+                return BadRequest("Body is required.");
+            try
+            {
+                var ids = await _databaseService.InsertGoogleSerpRawBatchAsync(serps);
+                return Ok(ids);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "POST /api/GoogleSerRaw/batch failed: TraceId={TraceId}", traceId);
+                var problem = new ProblemDetails
+                {
+                    Status = StatusCodes.Status500InternalServerError,
+                    Title = "Failed to save SERP batch.",
+                    Detail = "See API logs using the traceId.",
+                    Instance = HttpContext.Request.Path.Value
+                };
+                problem.Extensions["traceId"] = traceId;
+                return StatusCode(StatusCodes.Status500InternalServerError, problem);
+            }
+        }
+    }
 }
