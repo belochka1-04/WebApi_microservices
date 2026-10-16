@@ -1,4 +1,5 @@
-﻿using KameraData.Data.Dtos;
+﻿using KameraData.Data;
+using KameraData.Data.Dtos;
 using KameraData.Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +13,54 @@ namespace WebApi_ModelCatalogService.Controllers
     public class ModelController : BaseControllerClass
     {
 
-        public ModelController(IDatabaseService databaseService) : base(databaseService)
+        private readonly ModelBatchUpsertService _batchUpsertService;
+        private readonly ILogger<ModelController> _logger;
+
+        public ModelController(
+            IDatabaseService databaseService, KameraDbContext dbContext,
+            ILogger<ModelController> logger, ILogger<ModelBatchUpsertService> batchLogger)
+            : base(databaseService)
         {
+            _batchUpsertService = new ModelBatchUpsertService(dbContext, batchLogger);
+            _logger = logger;
+        }
+
+        [HttpPost("batch-upsert")]
+        [ProducesResponseType(typeof(ModelBatchUpsertResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<ModelBatchUpsertResult>> BatchUpsert(
+            [FromBody] ModelBatchUpsertRequest request, CancellationToken cancellationToken)
+        {
+            if (request?.Models == null || request.GoogleModelRequestId <= 0 || request.ChunkIndex < 0 ||
+                request.Models.Count > ModelBatchUpsertService.MaxModelsPerBatch)
+                return BadRequest($"Models must contain at most {ModelBatchUpsertService.MaxModelsPerBatch} entries.");
+
+            foreach (var model in request.Models)
+            {
+                if (model == null || model.SiteId <= 0 ||
+                    string.IsNullOrWhiteSpace(model.BrandTitle) || model.BrandTitle.Length > 150 ||
+                    string.IsNullOrWhiteSpace(model.CleanedModel) || model.CleanedModel.Length > 255 ||
+                    string.IsNullOrWhiteSpace(model.Title) || model.Title.Length > 150 ||
+                    string.IsNullOrWhiteSpace(model.Link) || model.Link.Length > 255)
+                    return BadRequest("Each model requires a valid site, brand, model number, title and link.");
+            }
+
+            ModelBatchUpsertResult result;
+            try
+            {
+                result = await _batchUpsertService.UpsertAsync(request, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex,
+                    "Model batch failed for RequestId={RequestId}, models={Count}",
+                    request.GoogleModelRequestId, request.Models.Count);
+                throw;
+            }
+            _logger.LogInformation(
+                "Model batch RequestId={RequestId}: Received={Received}, Inserted={Inserted}, Updated={Updated}, Unchanged={Unchanged}, MissingBrandModel={MissingBrandModel}, Duplicates={Duplicates}",
+                request.GoogleModelRequestId, result.Received, result.Inserted, result.Updated,
+                result.Unchanged, result.MissingBrandModel, result.Duplicates);
+            return Ok(result);
         }
 
         /// <summary>
