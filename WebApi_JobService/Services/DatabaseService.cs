@@ -52,7 +52,7 @@ namespace WebApi_JobService.Services
             try
             {
                 return await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.Status == "0")
+                    .Where(j => j.Status == "0" && j.GoogleConfirmed == 1)
                     .ToListAsync();
             }
             catch (Exception ex)
