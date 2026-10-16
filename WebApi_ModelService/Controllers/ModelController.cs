@@ -113,6 +113,18 @@ namespace WebApi_ModelService.Controllers
             }
         }
 
+        [HttpPost("jd-models-like-number-save-batch")]
+        public async Task<ActionResult<JobDocModelBatchResult>> SaveJobDocsBatch(
+            [FromBody] JobDocModelBatchRequest request, CancellationToken cancellationToken)
+        {
+            if (request.Searches == null || request.Searches.Count is < 1 or > 32 ||
+                request.Searches.Any(s => s == null || string.IsNullOrWhiteSpace(s.Prefix) ||
+                    s.Prefix.Length > 255 || s.MinLen < 0 || s.MaxLen < s.MinLen))
+                return BadRequest("A batch requires 1-32 valid prefixes and length bounds.");
+
+            return Ok(await _databaseService.GetJobDocModelsBatchAndInsertAsync(request, cancellationToken));
+        }
+
         [HttpGet("jd-models-like-number-save/{jobId}/{modelNumber}/{maxLen}/{minLen}")]
         public async Task<IActionResult> GetSetJDModelsLikeNumber(string modelNumber, int jobId, int maxLen, int minLen)
         {

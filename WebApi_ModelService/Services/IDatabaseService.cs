@@ -22,6 +22,7 @@ namespace WebApi_ModelService.Services
         Task<List<KameraData.Data.Models.Model>> GetModelsWithNum3Async(string modelNumber);
         Task<List<KameraData.Data.Models.JobDoc>> GetJDModelsWithNumAsync(string modelNumber);
         Task GetJobDocModelsLikeNameAndInsertAsync(string modelNumber, int jobId, int maxLen, int minLen);
+        Task<JobDocModelBatchResult> GetJobDocModelsBatchAndInsertAsync(JobDocModelBatchRequest request, CancellationToken cancellationToken);
         Task<List<string>> GetModelsLevaAsync(string InputTitle, string? InputBrandCode);
         Task<List<KameraData.Data.Models.NModel>> GetNModelsWithNumAsync(string modelNumber);
         Task<List<KameraData.Data.Models.Model>> GetModelsWithNumForTrimAsync(string modelNumber);
