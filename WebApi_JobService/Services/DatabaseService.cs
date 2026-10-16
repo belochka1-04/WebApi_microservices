@@ -66,7 +66,7 @@ namespace WebApi_JobService.Services
             try
             {
                 return await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.Status == "0")
+                    .Where(j => j.Status == "0" && j.GoogleConfirmed == 1)
                     .AsNoTracking()  // 🔥 +1: read-only, быстрее
                     .ToListAsync();
             }
@@ -92,8 +92,9 @@ namespace WebApi_JobService.Services
 (
     SELECT TOP (@BatchSize) *
     FROM dbo.job_description_and_notes WITH (UPDLOCK, READPAST, ROWLOCK)
-    WHERE status = '0'
-       OR (status = '2' AND lease_until_utc IS NOT NULL AND lease_until_utc < SYSUTCDATETIME())
+    WHERE google_confirmed = 1
+      AND (status = '0'
+       OR (status = '2' AND lease_until_utc IS NOT NULL AND lease_until_utc < SYSUTCDATETIME()))
     ORDER BY id
 )
 UPDATE jobs_to_claim
