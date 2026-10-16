@@ -312,6 +312,37 @@ namespace WebApi_ModelService.Services
             }
         }
 
+        public async Task<JobDocModelBatchResult> GetJobDocModelsBatchAndInsertAsync(
+            JobDocModelBatchRequest request, CancellationToken cancellationToken)
+        {
+            var output = new Microsoft.Data.SqlClient.SqlParameter("@insertedRows", System.Data.SqlDbType.Int)
+            { Direction = System.Data.ParameterDirection.Output };
+            var json = System.Text.Json.JsonSerializer.Serialize(request.Searches,
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+            var previousTimeout = _dbContext.Database.GetCommandTimeout();
+            try
+            {
+                _dbContext.Database.SetCommandTimeout(90);
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC dbo.GetJobDocModelsLikeNameAndInsertBatch @jobId, @searchesJson, @insertedRows OUTPUT",
+                    new object[]
+                    {
+                        new Microsoft.Data.SqlClient.SqlParameter("@jobId", request.JobId),
+                        new Microsoft.Data.SqlClient.SqlParameter("@searchesJson", System.Data.SqlDbType.NVarChar, -1) { Value = json },
+                        output
+                    }, cancellationToken);
+                var result = new JobDocModelBatchResult(request.Searches.Count, Convert.ToInt32(output.Value));
+                _logger.Info($"Job docs batch: JobId={request.JobId}, Searches={result.SearchCount}, InsertedRows={result.InsertedRows}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Job docs batch failed: JobId={request.JobId}, Searches={request.Searches.Count}");
+                throw;
+            }
+            finally { _dbContext.Database.SetCommandTimeout(previousTimeout); }
+        }
+
         public async Task GetJobDocModelsLikeNameAndInsertAsync(string modelNumber, int jobId, int maxLen, int minLen)
         {
             try
