@@ -75,6 +75,21 @@ namespace WebApi_JobStockService.Services
 
         }
 
+        public async Task<int> DeleteJobStocksBatchAsync(
+            int jobId, IReadOnlyCollection<int> userStockIds, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(userStockIds);
+            if (jobId <= 0 || userStockIds.Count > 500 || userStockIds.Any(id => id <= 0))
+                throw new ArgumentException("A cleanup batch requires a positive job ID and at most 500 positive stock IDs.");
+            if (userStockIds.Count == 0) return 0;
+
+            var ids = userStockIds.Distinct().ToArray();
+            // One atomic statement. Failures propagate to the caller.
+            return await _dbContext.JobStocks
+                .Where(js => js.JobId == jobId && ids.Contains(js.UserStockId))
+                .ExecuteDeleteAsync(cancellationToken);
+        }
+
         public async Task DeleteJobStocksByUserIdAsync(int jobId, int userStockId)
         {
             try

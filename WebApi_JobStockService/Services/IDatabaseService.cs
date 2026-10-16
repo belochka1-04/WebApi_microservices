@@ -11,6 +11,7 @@ namespace WebApi_JobStockService.Services
         Task<List<JobStocksView>> GetJobStocks(int jobId);
         Task DeleteJobStocksAsync(int jobId);
         Task DeleteJobStocksByUserIdAsync(int jobId, int userStockId);
+        Task<int> DeleteJobStocksBatchAsync(int jobId, IReadOnlyCollection<int> userStockIds, CancellationToken cancellationToken = default);
        // Task UpdateStockSearchAsync(int taskId, int status);
         Task InsertJobStocksAsync(int jobId, int userStockId, string matchPartNumber);
         Task DeleteJobStocksAsync(int jobId, int userStockId);

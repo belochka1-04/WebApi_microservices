@@ -23,6 +23,17 @@ namespace WebApi_JobStockService.Controllers
             return NoContent(); // Возвращает 204 No Content
         }
 
+        [HttpPost("delete-batch/{jobId:int}")]
+        public async Task<IActionResult> DeleteJobStocksBatch(
+            int jobId, [FromBody] int[]? userStockIds, CancellationToken cancellationToken)
+        {
+            if (jobId <= 0 || userStockIds == null || userStockIds.Length > 500 || userStockIds.Any(id => id <= 0))
+                return BadRequest("Provide a positive job ID and at most 500 positive stock IDs.");
+
+            await _databaseService.DeleteJobStocksBatchAsync(jobId, userStockIds, cancellationToken);
+            return NoContent();
+        }
+
         [HttpDelete("delete/{jobId}/{userStockId}")]
         public async Task<IActionResult> DeleteJobStocks(int jobId, int userStockId)
         {
