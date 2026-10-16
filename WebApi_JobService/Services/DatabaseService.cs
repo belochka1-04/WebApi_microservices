@@ -66,7 +66,8 @@ namespace WebApi_JobService.Services
             try
             {
                 return await _dbContext.JobDescriptionAndNotes
-                    .Where(j => j.Status == "0" && j.GoogleConfirmed == 1)
+                    .Where(j => j.Status == "0" && j.GoogleConfirmed == 1 && j.AttemptCount < 3
+                        && (j.LeaseUntilUtc == null || j.LeaseUntilUtc <= DateTime.UtcNow))
                     .AsNoTracking()  // 🔥 +1: read-only, быстрее
                     .ToListAsync();
             }
@@ -88,12 +89,19 @@ namespace WebApi_JobService.Services
             leaseSeconds = Math.Clamp(leaseSeconds, 60, 21600);
 
             const string sql = @"
+UPDATE dbo.job_description_and_notes WITH (UPDLOCK, READPAST, ROWLOCK)
+SET status = '3', worker_id = NULL, lease_until_utc = NULL,
+    processing_completed_at_utc = SYSUTCDATETIME(),
+    processing_last_error = LEFT(CONCAT(N'Lease expired after the final processing attempt. ', processing_last_error), 2000)
+WHERE ISNULL(attempt_count, 0) >= 3
+  AND (status = '0' OR (status = '2' AND lease_until_utc < SYSUTCDATETIME()));
 ;WITH jobs_to_claim AS
 (
     SELECT TOP (@BatchSize) *
     FROM dbo.job_description_and_notes WITH (UPDLOCK, READPAST, ROWLOCK)
     WHERE google_confirmed = 1
-      AND (status = '0'
+      AND ISNULL(attempt_count, 0) < 3
+      AND ((status = '0' AND (lease_until_utc IS NULL OR lease_until_utc <= SYSUTCDATETIME()))
        OR (status = '2' AND lease_until_utc IS NOT NULL AND lease_until_utc < SYSUTCDATETIME()))
     ORDER BY id
 )
@@ -103,8 +111,7 @@ SET status = '2',
     lease_until_utc = DATEADD(SECOND, @LeaseSeconds, SYSUTCDATETIME()),
     attempt_count = ISNULL(attempt_count, 0) + 1,
     processing_started_at_utc = COALESCE(processing_started_at_utc, SYSUTCDATETIME()),
-    processing_completed_at_utc = NULL,
-    processing_last_error = NULL
+    processing_completed_at_utc = NULL
 OUTPUT
     inserted.id,
     inserted.job_id,
@@ -179,6 +186,44 @@ OUTPUT
             }
 
             return result;
+        }
+
+        public async Task<bool> UpdateModelCheckerLeaseAsync(int id, ModelCheckerLeaseRequest request, string operation)
+        {
+            if (operation is not ("renew" or "complete" or "fail")) throw new ArgumentException(nameof(operation));
+            var update = operation switch
+            {
+                "renew" => "lease_until_utc = DATEADD(SECOND, @LeaseSeconds, SYSUTCDATETIME())",
+                "complete" => "status = '1', worker_id = NULL, lease_until_utc = NULL, processing_completed_at_utc = SYSUTCDATETIME(), processing_last_error = NULL",
+                _ => @"status = CASE WHEN attempt_count >= 3 THEN '3' ELSE '0' END,
+                       worker_id = NULL,
+                       lease_until_utc = CASE WHEN attempt_count >= 3 THEN NULL ELSE DATEADD(SECOND, 30 * attempt_count, SYSUTCDATETIME()) END,
+                       processing_completed_at_utc = CASE WHEN attempt_count >= 3 THEN SYSUTCDATETIME() ELSE NULL END,
+                       processing_last_error = @Error"
+            };
+            var sql = $@"UPDATE dbo.job_description_and_notes WITH (ROWLOCK)
+SET {update}
+WHERE id = @Id AND status = '2' AND worker_id = @WorkerId AND attempt_count = @Attempt
+  AND lease_until_utc > SYSUTCDATETIME();";
+            var parameters = new object[]
+            {
+                new SqlParameter("@Id", id), new SqlParameter("@WorkerId", request.WorkerId),
+                new SqlParameter("@Attempt", request.AttemptCount),
+                new SqlParameter("@LeaseSeconds", Math.Clamp(request.LeaseSeconds, 60, 21600)),
+                new SqlParameter("@Error", SqlDbType.NVarChar, -1) { Value = request.Error ?? "Processing failed." }
+            };
+            return await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters) == 1;
+        }
+
+        public async Task<bool> RetryModelCheckerJobAsync(int id, string reason)
+        {
+            var updated = await _dbContext.Database.ExecuteSqlRawAsync(@"
+UPDATE dbo.job_description_and_notes WITH (ROWLOCK)
+SET status = '0', attempt_count = 0, worker_id = NULL, lease_until_utc = NULL,
+    processing_started_at_utc = NULL, processing_completed_at_utc = NULL
+WHERE id = {0} AND status = '3';", id);
+            if (updated == 1) _logger.Info($"Manual model checker retry: DescriptionId={id}, Reason={reason}");
+            return updated == 1;
         }
 
         private static void AddParameter(System.Data.Common.DbCommand command, string name, object value)

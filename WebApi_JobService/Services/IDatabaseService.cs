@@ -12,6 +12,8 @@ namespace WebApi_JobService.Services
     {
         Task<IEnumerable<JobDescriptionAndNote>> GetJobsAsync();
         Task<IEnumerable<JobDescriptionAndNote>> ClaimJobsAsync(string workerId, int batchSize, int leaseSeconds);
+        Task<bool> UpdateModelCheckerLeaseAsync(int id, ModelCheckerLeaseRequest request, string operation);
+        Task<bool> RetryModelCheckerJobAsync(int id, string reason);
         Task<IEnumerable<JobDescriptionAndNote>> GetJandD(int jobID);
         Task UpdateDescriptionAndNotesStatusAsync(int jobId, int status);
         Task UpdateDescriptionAndNotesDescriptionAsync(int jobId, string fulltext);

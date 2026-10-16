@@ -46,6 +46,9 @@ builder.Services.AddSharedAuthentication(builder.Configuration);
 builder.Host.UseCustomSerilog();
 builder.Host.UseWindowsService();
 
+builder.Services.AddScoped<ModelCheckerLeaseFilter>();
+builder.Services.AddControllers(options => options.Filters.AddService<ModelCheckerLeaseFilter>());
+
 var app = builder.Build();
 
 app.UseSwagger();

@@ -35,6 +35,23 @@ namespace WebApi_JobService.Controllers
             return Ok(jobs);
         }
 
+        [HttpPost("{id:int}/lease/{operation}")]
+        public async Task<IActionResult> UpdateLease(int id, string operation, [FromBody] ModelCheckerLeaseRequest request)
+        {
+            if (id <= 0 || string.IsNullOrWhiteSpace(request.WorkerId) || operation is not ("renew" or "complete" or "fail"))
+                return BadRequest();
+            return await _databaseService.UpdateModelCheckerLeaseAsync(id, request, operation)
+                ? NoContent() : Conflict("Model checker lease expired or ownership changed.");
+        }
+
+        [HttpPost("{id:int}/retry")]
+        public async Task<IActionResult> Retry(int id, [FromBody] ModelCheckerRetryRequest request)
+        {
+            if (id <= 0 || string.IsNullOrWhiteSpace(request.Reason)) return BadRequest();
+            return await _databaseService.RetryModelCheckerJobAsync(id, request.Reason)
+                ? NoContent() : Conflict("Only failed model checker jobs can be retried.");
+        }
+
         [HttpGet("jobsForJob/{jobId}")]
         public async Task<ActionResult<IEnumerable<JobDescriptionAndNote>>> GetJobsForJobId(int jobId)
         {

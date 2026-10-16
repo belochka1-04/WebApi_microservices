@@ -146,7 +146,8 @@ namespace WebApi_JobStockService.Services
         {
             try
             {
-                await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                await using var transaction = _dbContext.Database.CurrentTransaction == null
+                    ? await _dbContext.Database.BeginTransactionAsync() : null;
 
                 await _dbContext.JobStocks
                     .Where(js => js.JobId == jobId && js.UserStockId == userStockId)
@@ -161,7 +162,7 @@ namespace WebApi_JobStockService.Services
 
                 await _dbContext.JobStocks.AddAsync(jobStock);
                 await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                if (transaction != null) await transaction.CommitAsync();
             }
             catch (DbUpdateException ex)
             {

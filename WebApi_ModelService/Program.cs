@@ -35,6 +35,9 @@ builder.Services.AddSharedAuthentication(builder.Configuration);
 // Логирование Serilog
 builder.Host.UseCustomSerilog();
 
+builder.Services.AddScoped<ModelCheckerLeaseFilter>();
+builder.Services.AddControllers(options => options.Filters.AddService<ModelCheckerLeaseFilter>());
+
 var app = builder.Build();
 
 app.UseSwagger();
