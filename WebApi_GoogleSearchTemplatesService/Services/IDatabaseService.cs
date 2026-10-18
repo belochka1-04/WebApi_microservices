@@ -63,6 +63,7 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 		Task<List<GoogleModelRequest>> GetPendingGoogleRequestsAsync(int batchSize);
 
 		Task<List<GoogleModelRequest>> ClaimPendingGoogleRequestsAsync(string workerId, int batchSize, int leaseSeconds);
+        Task<bool> UpdateGoogleRequestLeaseAsync(int id, GoogleRequestLeaseRequest request, string operation);
 
 		/// <summary>
 		/// Создать новый запрос к Google.

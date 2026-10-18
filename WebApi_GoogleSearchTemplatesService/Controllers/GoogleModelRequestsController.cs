@@ -8,7 +8,7 @@ namespace WebApi_GoogleSearchTemplatesService.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class GoogleModelRequestsController : BaseControllerClass
+    public partial class GoogleModelRequestsController : BaseControllerClass
     {
         public GoogleModelRequestsController(IDatabaseService databaseService)
             : base(databaseService)
