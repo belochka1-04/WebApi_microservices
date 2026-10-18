@@ -43,17 +43,29 @@ namespace WebApi_SourceService.Services
             try
             {
                 // Получаем все источники из базы данных с помощью Entity Framework
-                var a = _dbContext.Sites.Count();
-                return await _dbContext.Sites
+                var sites = await _dbContext.Sites
+                    .Select(j => new
+                    {
+                        j.Id,
+                        j.Confidence,
+                        j.DataTypes,
+                        j.FolderPath,
+                        j.Title
+                    })
+                    .ToListAsync();
+
+                return sites
                     .Select(j => new Sources
                     {
                         Id = j.Id,
-                        Confidence = Convert.ToInt32(j.confidence),
+                        Confidence = int.TryParse(j.Confidence, out var parsedConfidence)
+                        ? parsedConfidence
+                        : 0,
                         DataTypes = j.DataTypes,
                         FolderPath = j.FolderPath,
                         SourceName = j.Title
                     })
-                    .ToListAsync();
+                    .ToList();
 
             }
             catch (DbUpdateException ex)

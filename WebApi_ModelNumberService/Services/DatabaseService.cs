@@ -228,7 +228,7 @@ namespace WebApi_ModelNumberService.Services
                 {
                     JobId = jobId,
                     ModelNumber1 = model.model,
-                    Brand = model.Brand.Brand,
+                    Brand = model.Brand?.Brand?.Title,
                     MN_request = search_text,
                     Confirmed = status.ToString(),
                     DocCounter = count
