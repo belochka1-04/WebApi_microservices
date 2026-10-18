@@ -15,6 +15,8 @@ namespace WebApi_ModelNumberService.Services
         Task<ModelNumber> GetNextTaskWithConfAsync(string Conf);
         Task<ModelNumber> PickNextTaskAsync(string Conf);
         Task<ModelNumber> ClaimNextTaskAsync(string Conf, string workerId, int leaseSeconds);
+        Task<ModelNumber?> ClaimStockCheckerAsync(string owner, int leaseSeconds, int maxAttempts, int? jobId = null);
+        Task<bool> UpdateStockCheckerLeaseAsync(int id, StockCheckerLeaseRequest request, string operation);
         Task InsertModelNumberAsync(int jobId, KameraData.Data.Models.Model model, string search_text, int status, int count);
         Task InsertModelNumberBatchAsync(List<ModelNumberRequest> requests);
         Task InsertModelNumberBatchAsync(int jobId, KameraData.Data.Models.Model model, string search_text, int status, int count);

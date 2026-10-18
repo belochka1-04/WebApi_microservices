@@ -47,7 +47,8 @@ builder.Host.UseCustomSerilog();
 builder.Host.UseWindowsService();
 
 builder.Services.AddScoped<ModelCheckerLeaseFilter>();
-builder.Services.AddControllers(options => options.Filters.AddService<ModelCheckerLeaseFilter>());
+builder.Services.AddScoped<StockCheckerLeaseFilter>();
+builder.Services.AddControllers(options => { options.Filters.AddService<ModelCheckerLeaseFilter>(); options.Filters.AddService<StockCheckerLeaseFilter>(); });
 
 var app = builder.Build();
 

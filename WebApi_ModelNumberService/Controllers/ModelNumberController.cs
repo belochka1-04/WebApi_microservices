@@ -6,7 +6,7 @@ namespace WebApi_ModelNumberService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ModelNumberController : BaseControllerClass
+    public partial class ModelNumberController : BaseControllerClass
     {
 
         public ModelNumberController(IDatabaseService databaseService) : base(databaseService)
