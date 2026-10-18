@@ -20,6 +20,7 @@ var options = new WebApplicationOptions
 };
 
 var builder = WebApplication.CreateBuilder(options);
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(o => o.Filters.Add<StockSyncLeaseFilter>());
 
 // ================================
 // 1. DATABASE CONFIGURATION

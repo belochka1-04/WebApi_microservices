@@ -12,6 +12,8 @@ namespace WebApi_StockCredsService.Services
         Task<List<StockCred>> GetStockCreds();
         Task<List<StockCred>> ClaimDueStockCreds(string workerId, int batchSize, int leaseSeconds);
         Task ReleaseStockCredLease(int stockCredId, string workerId);
+        Task<bool> UpdateSyncLease(int id, StockSyncLeaseRequest request, bool finish);
+        Task UpdateSyncState(int id, StockSyncStateRequest request);
 
 
     }
