@@ -5,4 +5,4 @@
 <ProjectReference Include="../WebApi_ModelNumberService/WebApi_ModelNumberService.csproj"/>
 <ProjectReference Include="../WebApi_StockCredsService/WebApi_StockCredsService.csproj"/>
 <ProjectReference Include="../WebApi_UserService/WebApi_UserService.csproj"/>
-</ItemGroup></Project>
+<ProjectReference Include="../WebApi_GoogleSearchTemplatesService/WebApi_GoogleSearchTemplatesService.csproj"/></ItemGroup></Project>

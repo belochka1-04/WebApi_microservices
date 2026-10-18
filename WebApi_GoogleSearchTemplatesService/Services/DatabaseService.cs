@@ -16,7 +16,7 @@ using WebApi_GoogleSearchTemplatesService.Services;
 
 namespace WebApi_GoogleSearchTemplatesService.Services
 {
-	public class DatabaseService : IDatabaseService, IDatabaseHealthCheck
+	public partial class DatabaseService : IDatabaseService, IDatabaseHealthCheck
 	{
 		private readonly KameraDbContext _dbContext;
 		private readonly NLog.ILogger _logger;
