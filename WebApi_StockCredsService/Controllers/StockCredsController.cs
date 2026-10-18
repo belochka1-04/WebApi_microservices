@@ -46,6 +46,32 @@ namespace WebApi_StockCredsService.Controllers
             return NoContent();
         }
 
+        [HttpPost("renew-sync/{id}")]
+        public async Task<IActionResult> RenewSync(int id, [FromBody] StockSyncLeaseRequest request)
+        {
+            if (id <= 0 || request.LockId == Guid.Empty || string.IsNullOrWhiteSpace(request.WorkerId))
+                return BadRequest("Invalid stock sync lease.");
+            return await _databaseService.UpdateSyncLease(id, request, false)
+                ? NoContent() : Conflict("Stock sync lease expired or owner changed.");
+        }
+
+        [HttpPost("finish-sync/{id}")]
+        public async Task<IActionResult> FinishSync(int id, [FromBody] StockSyncLeaseRequest request)
+        {
+            if (id <= 0 || request.LockId == Guid.Empty || string.IsNullOrWhiteSpace(request.WorkerId))
+                return BadRequest("Invalid stock sync lease.");
+            return await _databaseService.UpdateSyncLease(id, request, true)
+                ? NoContent() : Conflict("Stock sync lease expired or owner changed.");
+        }
+
+        [HttpPut("sync-state/{id}")]
+        public async Task<IActionResult> UpdateSyncState(int id, [FromBody] StockSyncStateRequest request)
+        {
+            if (!Request.Headers.ContainsKey("X-StockSync-Stock")) return BadRequest("Stock sync lease required.");
+            await _databaseService.UpdateSyncState(id, request);
+            return NoContent();
+        }
+
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateStockCred(int id, [FromBody] StockCred stockCred)
         {

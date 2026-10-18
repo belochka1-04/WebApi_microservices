@@ -217,6 +217,7 @@ COMMIT TRANSACTION;
                 }
                 catch (Exception ex)
                 {
+                    if (_dbContext.Database.CurrentTransaction != null) throw;
                     Console.WriteLine($"Ошибка: {ex.Message}");
                     _logger.LogError("Ошибка:" + ex);
                 }
@@ -241,6 +242,7 @@ COMMIT TRANSACTION;
             }
             catch (Exception ex)
             {
+                    if (_dbContext.Database.CurrentTransaction != null) throw;
                 _logger.LogError($"Ошибка при удалении userStocks для Id {Id}: {ex.Message}");
             }
 

@@ -112,6 +112,37 @@ WHERE id = @stockCredId
 """, stockCredIdParam, workerIdParam);
         }
 
+        public async Task<bool> UpdateSyncLease(int id, StockSyncLeaseRequest request, bool finish)
+        {
+            var seconds = Math.Clamp(request.LeaseSeconds, 60, 3600);
+            var retry = Math.Clamp(request.RetryDelaySeconds, 1, 3600);
+            var error = request.Error is { Length: > 1000 } ? request.Error[..1000] : request.Error;
+            if (!finish)
+                return await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+UPDATE dbo.stock_creds SET sync_lease_until=DATEADD(second,{seconds},SYSUTCDATETIME())
+WHERE id={id} AND sync_locked_by={request.WorkerId} AND sync_lock_id={request.LockId}
+AND sync_lease_until > SYSUTCDATETIME();
+""") == 1;
+            if (request.Success)
+                return await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+UPDATE dbo.stock_creds SET sync_lock_id=NULL,sync_locked_by=NULL,sync_lease_until=NULL,sync_last_error=NULL
+WHERE id={id} AND sync_locked_by={request.WorkerId} AND sync_lock_id={request.LockId}
+AND sync_lease_until > SYSUTCDATETIME();
+""") == 1;
+            return await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+UPDATE dbo.stock_creds SET sync_lock_id=NULL,sync_locked_by=NULL,
+sync_lease_until=DATEADD(second,{retry},SYSUTCDATETIME()),sync_last_error={error}
+WHERE id={id} AND sync_locked_by={request.WorkerId} AND sync_lock_id={request.LockId}
+AND sync_lease_until > SYSUTCDATETIME();
+""") == 1;
+        }
+
+        public Task UpdateSyncState(int id, StockSyncStateRequest request) =>
+            _dbContext.StockCreds.Where(stock => stock.Id == id).ExecuteUpdateAsync(setters => setters
+                .SetProperty(stock => stock.UpdateTime, request.UpdateTime)
+                .SetProperty(stock => stock.RecordsCount, request.RecordsCount)
+                .SetProperty(stock => stock.SyncSwitch, request.SyncSwitch));
+
         public async Task UpdateStockCreds(StockCred stockCred)
         {
             try

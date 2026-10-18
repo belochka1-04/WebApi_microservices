@@ -11,6 +11,7 @@ using WebApi_StockCredsService.Services;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(o => o.Filters.Add<StockSyncLeaseFilter>());
 
 string connectionString = builder.Configuration.GetConnectionString("KameraDb");
 if (string.IsNullOrEmpty(connectionString))
