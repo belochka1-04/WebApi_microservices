@@ -13,9 +13,9 @@ using Service=WebApi_ModelNumberService.Services.DatabaseService;
 
 namespace ModelChecker.Lease.Tests;
 
-public sealed class StockSqlFactAttribute:FactAttribute
+public sealed class StockCheckerSqlFactAttribute:FactAttribute
 {
-    public StockSqlFactAttribute() {if(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("STOCK_CHECKER_TEST_CONNECTION"))) Skip="Requires explicit test SQL connection.";}
+    public StockCheckerSqlFactAttribute() {if(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("STOCK_CHECKER_TEST_CONNECTION"))) Skip="Requires explicit test SQL connection.";}
 }
 public sealed class StockCheckerTests
 {
@@ -55,7 +55,7 @@ public sealed class StockCheckerTests
         }
     }
 
-    [StockSqlFact]
+    [StockCheckerSqlFact]
     public async Task ClaimRequiresReadyJob_SerializesModelsWithinJob_AndCanRefillAfterCompletion()
     {
         await using var f=new Fixture();await f.Start();var notReady=await f.Row(ready:0);var first=await f.Row();var second=await f.Row();
@@ -71,7 +71,7 @@ public sealed class StockCheckerTests
         Assert.Equal(second.Id,next!.Id);Assert.Equal("1",(await f.Read(notReady.Id)).Confirmed);
     }
 
-    [StockSqlFact]
+    [StockCheckerSqlFact]
     public async Task OwnerAttemptAndExpiryFenceAllLeaseOperations()
     {
         await using var f=new Fixture();await f.Start();await f.Row();var claim=(await f.Service.ClaimStockCheckerAsync("owner-a",900,3,f.JobId))!;
@@ -87,7 +87,7 @@ public sealed class StockCheckerTests
         Assert.False(await f.Service.UpdateStockCheckerLeaseAsync(claim.Id,f.Token(claim),"complete"));
     }
 
-    [StockSqlFact]
+    [StockCheckerSqlFact]
     public async Task FailureAndCrashRetriesAreBounded_AndRetryDoesNotRunImmediately()
     {
         await using var f=new Fixture();await f.Start();await f.Row();
@@ -104,7 +104,7 @@ public sealed class StockCheckerTests
         Assert.Equal("3",(await f.Read(crashed.Id)).Confirmed);
     }
 
-    [StockSqlFact]
+    [StockCheckerSqlFact]
     public async Task ResultGuardRejectsStaleAndCrossJobWrites_AndRollsBackFailedAction()
     {
         await using var f=new Fixture();await f.Start(false);var row=await f.Row("-1",1);
@@ -134,7 +134,7 @@ public sealed class StockCheckerTests
         Assert.Equal("COMMIT",(await f.Read(row.Id)).LastError);
     }
 
-    [StockSqlFact]
+    [StockCheckerSqlFact]
     public async Task OwnerCannotChangeWhileResultWriteIsInProgress()
     {
         await using var f=new Fixture();await f.Start(false);var row=await f.Row("-1",1);
