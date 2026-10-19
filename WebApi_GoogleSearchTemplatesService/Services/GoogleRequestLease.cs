@@ -7,7 +7,7 @@ public sealed class GoogleRequestLeaseRequest
     public string WorkerId { get; set; } = "";
     public int AttemptCount { get; set; }
     public int LeaseSeconds { get; set; } = 900;
-    public int RetryDelaySeconds { get; set; } = 300;
+    public int RetryDelaySeconds { get; set; } = 2;
     public int MaxAttempts { get; set; } = 5;
     public string? Error { get; set; }
 }

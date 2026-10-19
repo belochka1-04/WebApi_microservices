@@ -1,4 +1,4 @@
-﻿using KameraData.Data;
+using KameraData.Data;
 using KameraData.Data.Dtos;
 using KameraData.Data.Models;
 using Microsoft.Data.SqlClient;
@@ -72,19 +72,36 @@ namespace WebApi_GoogleSearchTemplatesService.Services
 					.Distinct()
 					.ToList();
 
-				await using var transaction = await _dbContext.Database.BeginTransactionAsync();
-
-				await _dbContext.GoogleSerpRaws
-					.Where(x => requestIds.Contains(x.GoogleModelRequestId))
-					.ExecuteDeleteAsync();
-
-				await _dbContext.GoogleSerpRaws.AddRangeAsync(items);
-				await _dbContext.SaveChangesAsync();
-				await transaction.CommitAsync();
-
-				var ids = items.Select(x => x.Id).ToList();
-				_logger.Info("Inserted {Count} google_serp_raw records", ids.Count);
-				return ids;
+                var strategy = _dbContext.Database.CreateExecutionStrategy();
+                var ids = await strategy.ExecuteAsync(async () =>
+                {
+                    // Recreate rows on each attempt: a rolled-back SaveChanges may already
+                    // have assigned identity values and changed the tracked entity states.
+                    var rows = items.Select(item => new GoogleSerpRaw
+                    {
+                        GoogleModelRequestId = item.GoogleModelRequestId,
+                        QueryText = item.QueryText, GooglePage = item.GooglePage,
+                        Title = item.Title, Snippet = item.Snippet, Url = item.Url,
+                        CreatedAt = item.CreatedAt
+                    }).ToList();
+                    try
+                    {
+                        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                        await _dbContext.GoogleSerpRaws
+                            .Where(x => requestIds.Contains(x.GoogleModelRequestId))
+                            .ExecuteDeleteAsync();
+                        await _dbContext.GoogleSerpRaws.AddRangeAsync(rows);
+                        await _dbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        return rows.Select(row => row.Id).ToList();
+                    }
+                    finally
+                    {
+                        foreach (var row in rows) _dbContext.Entry(row).State = EntityState.Detached;
+                    }
+                });
+                _logger.Info("Inserted {Count} google_serp_raw records", ids.Count);
+                return ids;
 			}
 			catch (Exception ex)
 			{
