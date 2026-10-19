@@ -125,7 +125,8 @@ AND sync_lease_until > SYSUTCDATETIME();
 """) == 1;
             if (request.Success)
                 return await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-UPDATE dbo.stock_creds SET sync_lock_id=NULL,sync_locked_by=NULL,sync_lease_until=NULL,sync_last_error=NULL
+UPDATE dbo.stock_creds SET sync_lock_id=NULL,sync_locked_by=NULL,sync_lease_until=NULL,sync_last_error=NULL,
+update_time=GETDATE()
 WHERE id={id} AND sync_locked_by={request.WorkerId} AND sync_lock_id={request.LockId}
 AND sync_lease_until > SYSUTCDATETIME();
 """) == 1;

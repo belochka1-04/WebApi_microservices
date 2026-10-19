@@ -24,6 +24,16 @@ public sealed class StockSqlFactAttribute : FactAttribute
 
 public sealed class StockSyncLeaseTests
 {
+    [StockSqlFact]
+    public async Task SuccessfulFinishSchedulesFromDatabaseClockInsteadOfWorkerLocalTime()
+    {
+        using var f = new Fixture();
+        f.Sql("UPDATE dbo.stock_creds SET sync_freq='60',update_time=DATEADD(hour,-3,GETDATE()) WHERE id=@id", ("@id", f.Id));
+        await using var db = f.Context();
+        Assert.True(await new Service(db).UpdateSyncLease(f.Id, f.Request(), true));
+        Assert.Equal(1, f.Sql("SELECT CASE WHEN ABS(DATEDIFF(second,update_time,GETDATE()))<10 AND DATEADD(second,TRY_CONVERT(int,sync_freq),update_time)>GETDATE() THEN 1 ELSE 0 END FROM dbo.stock_creds WHERE id=@id", ("@id", f.Id)));
+    }
+
     private sealed class Fixture : IDisposable
     {
         public readonly string Connection = Environment.GetEnvironmentVariable("STOCK_SYNC_TEST_CONNECTION")!;
