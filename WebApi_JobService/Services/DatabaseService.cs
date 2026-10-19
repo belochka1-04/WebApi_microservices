@@ -45,10 +45,8 @@ namespace WebApi_JobService.Services
                 if (!canConnect) return false;
 
                 // 🔥 +2: тестовая query
-                var count = await _dbContext.JobDescriptionAndNotes
-                    .FromSqlRaw("SELECT COUNT(*) FROM JobDescriptionAndNotes WITH (NOLOCK)")
-                    .AsNoTracking()
-                    .CountAsync();
+                // Verify SQL execution without scanning the queue or relying on a CLR table name.
+                await _dbContext.Database.ExecuteSqlRawAsync("SELECT 1;");
 
                 return true;
             }

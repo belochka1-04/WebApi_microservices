@@ -19,6 +19,14 @@ public sealed class SqlFactAttribute : FactAttribute
 }
 public sealed class LeaseTests
 {
+    [SqlFact]
+    public async Task DatabaseHealthCheckUsesAValidLightweightQuery()
+    {
+        await using var db=new KameraDbContext(new DbContextOptionsBuilder<KameraDbContext>()
+            .UseSqlServer(Environment.GetEnvironmentVariable("MNC_TEST_CONNECTION")).Options);
+        var service=new Service(db,null!,NullLogger<Service>.Instance);
+        Assert.True(await service.IsDatabaseHealthyAsync());
+    }
     private sealed class Fixture : IDisposable
     {
         public readonly string Connection=Environment.GetEnvironmentVariable("MNC_TEST_CONNECTION")!;
