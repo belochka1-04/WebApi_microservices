@@ -10,8 +10,11 @@ namespace WebApi_PartsService.Controllers
     public class PartsController : BaseControllerClass
     {
 
-        public PartsController(IDatabaseService databaseService) : base(databaseService)
+        private readonly ILogger<PartsController> _logger;
+
+        public PartsController(IDatabaseService databaseService, ILogger<PartsController> logger) : base(databaseService)
         {
+            _logger = logger;
         }
 
         [HttpGet("getPartsByModelId/{modelId}")]
@@ -19,7 +22,7 @@ namespace WebApi_PartsService.Controllers
         {
             if (modelId <= 0)
             {
-                return BadRequest("Неверный идентификатор модели."); // Возвращаем 400 Bad Request
+                return BadRequest("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ."); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 400 Bad Request
             }
 
             try
@@ -28,20 +31,22 @@ namespace WebApi_PartsService.Controllers
 
                 if (parts == null || parts.Count == 0)
                 {
-                    return NotFound("Части не найдены для указанного идентификатора модели."); // Возвращаем 404 Not Found
+                    return NotFound("пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ."); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 404 Not Found
                 }
 
-                return Ok(parts); // Возвращаем 200 OK с найденными частями
+                return Ok(parts); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 200 OK пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             }
             catch (DbUpdateException ex)
             {
-                // Логируем ошибку
-                return StatusCode(500, "Ошибка сервера при получении частей."); // Возвращаем 500 Internal Server Error
+                _logger.LogError(ex, "Failed to read parts for model {ModelId}", modelId);
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+                return StatusCode(500, "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ."); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 500 Internal Server Error
             }
             catch (Exception ex)
             {
-                // Логируем ошибку
-                return StatusCode(500, "Ошибка сервера при получении частей."); // Возвращаем 500 Internal Server Error
+                _logger.LogError(ex, "Failed to read parts for model {ModelId}", modelId);
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+                return StatusCode(500, "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ."); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 500 Internal Server Error
             }
         }
 

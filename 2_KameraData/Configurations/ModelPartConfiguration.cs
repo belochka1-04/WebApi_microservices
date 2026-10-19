@@ -21,7 +21,7 @@ namespace KameraData.Data.Configurations
                 .IsRequired();
 
             entity.HasOne(e => e.Model)
-                .WithMany()
+                .WithMany(e => e.ModelParts)
                 .HasForeignKey(e => e.ModelId);
 
             entity.HasOne(e => e.Part)

@@ -15,7 +15,7 @@ public class ModelPart
     public int PartId { get; set; }
 
     // Навигационное свойство для связи с моделью (если необходимо)
-    public virtual Model Model { get; set; }
+    public virtual ModelTb Model { get; set; }
 
     // Навигационное свойство для связи с деталью (если необходимо)
     public virtual Parts Part { get; set; }
