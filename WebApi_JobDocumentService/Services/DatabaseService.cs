@@ -189,7 +189,7 @@ namespace WebApi_JobDocumentService.Services
             {
                 Console.WriteLine($"Ошибка: {ex.Message}");
                 _logger.Error("Ошибка:" + "джоб ид:" + jobID + " - " + ex);
-                return new JobDoc();
+                throw;
             }
         }
 
@@ -211,7 +211,7 @@ namespace WebApi_JobDocumentService.Services
             {
                 Console.WriteLine($"Ошибка: {ex.Message}");
                 _logger.Error("Ошибка:" + "джоб ид:" + jobID + " - " + ex);
-                return new JobDoc();
+                throw;
             }
         }
         /// <summary>

@@ -12,5 +12,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
     <ProjectReference Include="..\WebApi_JobStockService\WebApi_JobStockService.csproj" />
+    <ProjectReference Include="..\WebApi_JobDocumentService\WebApi_JobDocumentService.csproj" />
   </ItemGroup>
 </Project>
